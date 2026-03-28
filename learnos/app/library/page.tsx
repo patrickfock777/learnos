@@ -165,10 +165,15 @@ export default function LibraryPage() {
     )
   }
 
+  const confirmLabel = confirmDelete
+    ? (texts.find(t => t.id === confirmDelete)?.title || folders.find(f => f.id === confirmDelete)?.name || '')
+    : ''
+  const confirmIsFolder = confirmDelete ? !!folders.find(f => f.id === confirmDelete) : false
+
   return (
     <div style={{ minHeight: '100vh', background: '#f8f8f7' }}>
-      {confirmDelete && folders.find(f => f.id === confirmDelete) && (
-        <ConfirmModal label={folders.find(f => f.id === confirmDelete)?.name || ''} onConfirm={() => deleteFolder(confirmDelete!)} />
+      {confirmDelete && (
+        <ConfirmModal label={confirmLabel} onConfirm={() => confirmIsFolder ? deleteFolder(confirmDelete!) : deleteText(confirmDelete!)} />
       )}
       <div style={{ background: '#fff', borderBottom: '0.5px solid #e5e5e2', padding: '1rem', maxWidth: '600px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
         <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px' }}>←</button>
