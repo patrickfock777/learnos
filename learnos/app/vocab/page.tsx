@@ -26,6 +26,7 @@ export default function VocabPage() {
   const [newCardEn, setNewCardEn] = useState('')
   const [newCardSyn, setNewCardSyn] = useState('')
   const [stats, setStats] = useState({ correct: 0, wrong: 0 })
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -59,6 +60,18 @@ export default function VocabPage() {
     await supabase.from('vocab_sets').insert({ name: newSetName, icon: newSetIcon, color: '#EEEDFE', workspace_id: profile?.workspace_id, created_by: userId, description: '' })
     setNewSetName(''); setShowNewSet(false)
     loadSets(userId)
+  }
+
+  async function deleteSet(setId: string) {
+    await supabase.from('vocab_sets').delete().eq('id', setId)
+    setConfirmDelete(null)
+    loadSets(userId)
+  }
+
+  async function deleteCard(cardId: string) {
+    await supabase.from('vocab_cards').delete().eq('id', cardId)
+    setConfirmDelete(null)
+    if (activeSet) loadCards(activeSet.id)
   }
 
   async function createCard() {
@@ -100,16 +113,31 @@ export default function VocabPage() {
   }
 
   const icons = ['📝','📚','💼','✈️','🏥','💻','🎯','🌍','🗣️','⭐']
+  const btnDel = { padding: '5px 10px', background: '#FCEBEB', border: '0.5px solid #E24B4A', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', color: '#791F1F' }
+  const btnCan = { padding: '5px 10px', background: '#fff', border: '0.5px solid #e5e5e2', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', color: '#6b6b67' }
+
+  // Confirm delete modal
+  const ConfirmModal = ({ id, label, onConfirm }: { id: string; label: string; onConfirm: () => void }) => (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
+      <div style={{ background: '#fff', borderRadius: '16px', padding: '1.5rem', maxWidth: '320px', width: '100%' }}>
+        <div style={{ fontWeight: 500, marginBottom: '8px' }}>Wirklich löschen?</div>
+        <div style={{ fontSize: '14px', color: '#6b6b67', marginBottom: '1.25rem' }}>„{label}" wird dauerhaft gelöscht.</div>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={onConfirm} style={{ flex: 1, padding: '10px', background: '#E24B4A', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 500 }}>Löschen</button>
+          <button onClick={() => setConfirmDelete(null)} style={{ flex: 1, padding: '10px', background: '#fff', border: '0.5px solid #e5e5e2', borderRadius: '8px', cursor: 'pointer', color: '#6b6b67' }}>Abbrechen</button>
+        </div>
+      </div>
+    </div>
+  )
 
   if (view === 'quiz' && quizQueue.length > 0) {
     const card = quizQueue[quizIdx]
-    const total = quizQueue.length
     return (
       <div style={{ minHeight: '100vh', background: '#f8f8f7' }}>
         <div style={{ background: '#fff', borderBottom: '0.5px solid #e5e5e2', padding: '1rem', maxWidth: '600px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button onClick={() => setView('cards')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px' }}>←</button>
           <span style={{ fontWeight: 500 }}>Quiz: {activeSet?.name}</span>
-          <span style={{ marginLeft: 'auto', fontSize: '13px', color: '#6b6b67' }}>{quizIdx + 1} / {total}</span>
+          <span style={{ marginLeft: 'auto', fontSize: '13px', color: '#6b6b67' }}>{quizIdx + 1} / {quizQueue.length}</span>
         </div>
         <div style={{ maxWidth: '600px', margin: '0 auto', padding: '1.5rem 1rem' }}>
           <div style={{ display: 'flex', gap: '8px', marginBottom: '1rem' }}>
@@ -132,7 +160,7 @@ export default function VocabPage() {
                 {card.synonyms?.length > 0 && <div style={{ fontSize: '12px', marginTop: '4px', opacity: 0.8 }}>Auch akzeptiert: {card.synonyms.join(', ')}</div>}
               </div>
               <button onClick={nextCard} style={{ width: '100%', padding: '12px', background: '#378ADD', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 500, cursor: 'pointer' }}>
-                {quizIdx + 1 >= total ? 'Fertig' : 'Weiter →'}
+                {quizIdx + 1 >= quizQueue.length ? 'Fertig' : 'Weiter →'}
               </button>
             </div>
           )}
@@ -144,6 +172,9 @@ export default function VocabPage() {
   if (view === 'cards' && activeSet) {
     return (
       <div style={{ minHeight: '100vh', background: '#f8f8f7' }}>
+        {confirmDelete && cards.find(c => c.id === confirmDelete) && (
+          <ConfirmModal id={confirmDelete} label={cards.find(c => c.id === confirmDelete)?.word_de || ''} onConfirm={() => deleteCard(confirmDelete)} />
+        )}
         <div style={{ background: '#fff', borderBottom: '0.5px solid #e5e5e2', padding: '1rem', maxWidth: '600px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button onClick={() => setView('sets')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px' }}>←</button>
           <span style={{ fontSize: '18px' }}>{activeSet.icon}</span>
@@ -151,8 +182,8 @@ export default function VocabPage() {
           <span style={{ marginLeft: 'auto', fontSize: '13px', color: '#6b6b67' }}>{cards.length} Karten</span>
         </div>
         <div style={{ maxWidth: '600px', margin: '0 auto', padding: '1rem' }}>
-          {cards.length > 0 && <button onClick={startQuiz} style={{ width: '100%', padding: '12px', background: '#378ADD', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 500, cursor: 'pointer', marginBottom: '1rem' }}>▶ Quiz starten ({cards.length} Karten)</button>}
-          <button onClick={() => setShowNewCard(true)} style={{ width: '100%', padding: '10px', background: '#fff', border: '0.5px solid #378ADD', color: '#378ADD', borderRadius: '12px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', marginBottom: '1rem' }}>+ Vokabel hinzufügen</button>
+          {cards.length > 0 && <button onClick={startQuiz} style={{ width: '100%', padding: '12px', background: '#378ADD', color: '#fff', border: 'none', borderRadius: '12px', fontSize: '15px', fontWeight: 500, cursor: 'pointer', marginBottom: '8px' }}>▶ Quiz starten ({cards.length} Karten)</button>}
+          <button onClick={() => setShowNewCard(!showNewCard)} style={{ width: '100%', padding: '10px', background: '#fff', border: '0.5px solid #378ADD', color: '#378ADD', borderRadius: '12px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', marginBottom: '1rem' }}>+ Vokabel hinzufügen</button>
           {showNewCard && (
             <div style={{ background: '#fff', border: '0.5px solid #e5e5e2', borderRadius: '12px', padding: '1rem', marginBottom: '1rem' }}>
               <input value={newCardDe} onChange={e => setNewCardDe(e.target.value)} placeholder="Deutsch" style={{ width: '100%', padding: '9px', border: '0.5px solid #e5e5e2', borderRadius: '8px', fontSize: '14px', marginBottom: '8px' }} />
@@ -168,16 +199,19 @@ export default function VocabPage() {
             const p = progress[card.id]
             return (
               <div key={card.id} style={{ background: '#fff', border: '0.5px solid #e5e5e2', borderRadius: '12px', padding: '1rem', marginBottom: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                  <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 500, fontSize: '15px' }}>{card.word_de}</div>
                     <div style={{ color: '#6b6b67', fontSize: '13px', marginTop: '2px' }}>{card.word_en}</div>
                     {card.synonyms?.length > 0 && <div style={{ fontSize: '12px', color: '#6b6b67', marginTop: '2px' }}>+ {card.synonyms.join(', ')}</div>}
                   </div>
-                  {p && <div style={{ display: 'flex', gap: '6px' }}>
-                    <span style={{ fontSize: '11px', background: '#EAF3DE', color: '#27500A', padding: '2px 6px', borderRadius: '20px' }}>✓ {p.correct}</span>
-                    <span style={{ fontSize: '11px', background: '#FCEBEB', color: '#791F1F', padding: '2px 6px', borderRadius: '20px' }}>✗ {p.wrong}</span>
-                  </div>}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {p && <>
+                      <span style={{ fontSize: '11px', background: '#EAF3DE', color: '#27500A', padding: '2px 6px', borderRadius: '20px' }}>✓ {p.correct}</span>
+                      <span style={{ fontSize: '11px', background: '#FCEBEB', color: '#791F1F', padding: '2px 6px', borderRadius: '20px' }}>✗ {p.wrong}</span>
+                    </>}
+                    <button onClick={() => setConfirmDelete(card.id)} style={btnDel}>✕</button>
+                  </div>
                 </div>
               </div>
             )
@@ -190,12 +224,15 @@ export default function VocabPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8f8f7' }}>
+      {confirmDelete && sets.find(s => s.id === confirmDelete) && (
+        <ConfirmModal id={confirmDelete} label={sets.find(s => s.id === confirmDelete)?.name || ''} onConfirm={() => deleteSet(confirmDelete)} />
+      )}
       <div style={{ background: '#fff', borderBottom: '0.5px solid #e5e5e2', padding: '1rem', maxWidth: '600px', margin: '0 auto', display: 'flex', alignItems: 'center', gap: '12px' }}>
         <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px' }}>←</button>
         <span style={{ fontWeight: 500, fontSize: '17px' }}>🗂️ Vokabel-Sets</span>
       </div>
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '1rem' }}>
-        <button onClick={() => setShowNewSet(true)} style={{ width: '100%', padding: '10px', background: '#fff', border: '0.5px solid #378ADD', color: '#378ADD', borderRadius: '12px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', marginBottom: '1rem' }}>+ Neues Set erstellen</button>
+        <button onClick={() => setShowNewSet(!showNewSet)} style={{ width: '100%', padding: '10px', background: '#fff', border: '0.5px solid #378ADD', color: '#378ADD', borderRadius: '12px', fontSize: '14px', fontWeight: 500, cursor: 'pointer', marginBottom: '1rem' }}>+ Neues Set erstellen</button>
         {showNewSet && (
           <div style={{ background: '#fff', border: '0.5px solid #e5e5e2', borderRadius: '12px', padding: '1rem', marginBottom: '1rem' }}>
             <input value={newSetName} onChange={e => setNewSetName(e.target.value)} placeholder="Name des Sets (z.B. DOOH Fachbegriffe)" style={{ width: '100%', padding: '9px', border: '0.5px solid #e5e5e2', borderRadius: '8px', fontSize: '14px', marginBottom: '8px' }} />
@@ -209,10 +246,12 @@ export default function VocabPage() {
           </div>
         )}
         {sets.map(s => (
-          <div key={s.id} onClick={() => openSet(s)} style={{ background: '#fff', border: '0.5px solid #e5e5e2', borderRadius: '12px', padding: '1rem', marginBottom: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '24px' }}>{s.icon || '📝'}</span>
-            <div><div style={{ fontWeight: 500 }}>{s.name}</div>{s.description && <div style={{ fontSize: '12px', color: '#6b6b67' }}>{s.description}</div>}</div>
-            <span style={{ marginLeft: 'auto', fontSize: '18px', color: '#6b6b67' }}>›</span>
+          <div key={s.id} style={{ background: '#fff', border: '0.5px solid #e5e5e2', borderRadius: '12px', padding: '1rem', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div onClick={() => openSet(s)} style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, cursor: 'pointer' }}>
+              <span style={{ fontSize: '24px' }}>{s.icon || '📝'}</span>
+              <div><div style={{ fontWeight: 500 }}>{s.name}</div>{s.description && <div style={{ fontSize: '12px', color: '#6b6b67' }}>{s.description}</div>}</div>
+            </div>
+            <button onClick={() => setConfirmDelete(s.id)} style={btnDel}>✕</button>
           </div>
         ))}
         {sets.length === 0 && <div style={{ textAlign: 'center', padding: '2rem', color: '#6b6b67', fontSize: '14px' }}>Noch keine Sets. Erstelle dein erstes Vokabel-Set!</div>}
