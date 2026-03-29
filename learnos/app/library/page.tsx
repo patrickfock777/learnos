@@ -8,7 +8,7 @@ type View = 'list' | 'read' | 'new' | 'edit'
 
 const C = {
   primary: '#1a3a4a', teal: '#ADD8E6', tealDark: '#7BB8CC', tealLight: '#E8F6FA',
-  sand: '#f7f4f0', text: '#1a2c35', text2: '#5a7280', border: '#dde8ec',
+  accent: '#2a6478', sand: '#f7f4f0', text: '#1a2c35', text2: '#5a7280', border: '#dde8ec',
   danger: '#e24b4a', dangerLight: '#fef0f0', white: '#fff', bg: '#edf4f7'
 }
 
