@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import type { LernText, Folder } from '@/lib/types'
 
 type View = 'list' | 'read' | 'new' | 'edit'
-type AiLang = 'improve_en' | 'de_to_en' | 'en_to_de'
+type AiLang = 'improve_en' | 'improve_de' | 'de_to_en' | 'en_to_de'
 type AiLength = 'shorter' | 'same' | 'longer'
 
 const C = {
@@ -132,6 +132,7 @@ export default function LibraryPage() {
     try {
       const langPrompts = {
         improve_en:`Improve this English text to professional Business English. ${aiLength==='shorter'?'Make it about 30% shorter.':aiLength==='longer'?'Make it about 30% longer.':'Keep the same length.'}`,
+        improve_de:`Verbessere diesen deutschen Text zu professionellem Geschäftsdeutsch. ${aiLength==='shorter'?'Mache ihn etwa 30% kürzer.':aiLength==='longer'?'Mache ihn etwa 30% länger.':'Behalte die gleiche Länge.'}`,
         de_to_en:`Translate this German text to professional Business English. ${aiLength==='shorter'?'Make it shorter.':aiLength==='longer'?'Make it longer.':'Keep the same length.'}`,
         en_to_de:`Translate this English text to professional German. ${aiLength==='shorter'?'Mache es kürzer.':aiLength==='longer'?'Mache es länger.':'Gleiche Länge.'}`
       }
@@ -144,7 +145,7 @@ export default function LibraryPage() {
 
   async function acceptAiResult() {
     if (!activeText||!aiResult) return
-    const field = aiLang==='en_to_de'?'content_translated':'content_improved'
+    const field = (aiLang==='en_to_de'||aiLang==='improve_de')?'content_translated':'content_improved'
     await supabase.from('texts').update({[field]:aiResult}).eq('id',activeText.id)
     setActiveText(prev=>prev?{...prev,[field]:aiResult}:null)
     setAiResult(null)
@@ -153,7 +154,7 @@ export default function LibraryPage() {
   function speak(text:string) {
     if (speaking){window.speechSynthesis.cancel();setSpeaking(false);return}
     const u=new SpeechSynthesisUtterance(text)
-    u.lang=aiLang==='en_to_de'?'de-DE':'en-GB';u.rate=0.9
+    u.lang=(aiLang==='en_to_de'||aiLang==='improve_de')?'de-DE':'en-GB';u.rate=0.9
     u.onend=()=>setSpeaking(false)
     setSpeaking(true);window.speechSynthesis.speak(u)
   }
@@ -261,7 +262,7 @@ export default function LibraryPage() {
       <div style={{fontSize:'11px',fontWeight:700,color:C.primary,marginBottom:'8px',textTransform:'uppercase' as const,letterSpacing:'0.05em'}}>KI-Optionen</div>
       <div style={{marginBottom:'10px'}}>
         <div style={{fontSize:'11px',color:C.text2,marginBottom:'5px',fontWeight:600}}>Sprache / Modus</div>
-        {([['improve_en','🇬🇧 Englisch verbessern'],['de_to_en','🇩🇪→🇬🇧 Deutsch → Englisch'],['en_to_de','🇬🇧→🇩🇪 Englisch → Deutsch']] as [AiLang,string][]).map(([val,label])=>(
+        {([['improve_en','🇬🇧 Englisch verbessern'],['improve_de','🇩🇪 Deutsch verbessern'],['de_to_en','🇩🇪→🇬🇧 Deutsch → Englisch'],['en_to_de','🇬🇧→🇩🇪 Englisch → Deutsch']] as [AiLang,string][]).map(([val,label])=>(
           <label key={val} style={{display:'flex',alignItems:'center',gap:'7px',cursor:'pointer',fontSize:'13px',color:C.text,marginBottom:'4px'}}>
             <input type="radio" checked={aiLang===val} onChange={()=>setAiLang(val)} style={{accentColor:C.primary}} />
             {label}
