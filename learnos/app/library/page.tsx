@@ -8,7 +8,7 @@ type View = 'list' | 'read' | 'new' | 'edit'
 
 const C = {
   primary: '#1a3a4a', teal: '#ADD8E6', tealDark: '#7BB8CC', tealLight: '#E8F6FA',
-  accent: '#2a6478', sand: '#f7f4f0', text: '#1a2c35', text2: '#5a7280', border: '#dde8ec',
+  sand: '#f7f4f0', text: '#1a2c35', text2: '#5a7280', border: '#dde8ec',
   danger: '#e24b4a', dangerLight: '#fef0f0', white: '#fff', bg: '#edf4f7'
 }
 
@@ -39,9 +39,6 @@ export default function LibraryPage() {
   const [newFolderName, setNewFolderName] = useState('')
   const [newFolderIcon, setNewFolderIcon] = useState('📁')
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set())
-  const [editingFolder, setEditingFolder] = useState<string | null>(null)
-  const [editFolderName, setEditFolderName] = useState('')
-  const [editFolderIcon, setEditFolderIcon] = useState('📁')
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -81,17 +78,6 @@ export default function LibraryPage() {
     setConfirmDelete(null)
     if (activeFolder === id) setActiveFolder(null)
     loadData(userId)
-  }
-
-  async function renameFolder() {
-    if (!editingFolder || !editFolderName.trim()) return
-    await supabase.from('folders').update({ name: editFolderName, icon: editFolderIcon }).eq('id', editingFolder)
-    setEditingFolder(null); setEditFolderName(''); loadData(userId)
-  }
-
-  function startEditFolder(f: Folder, e: React.MouseEvent) {
-    e.stopPropagation()
-    setEditingFolder(f.id); setEditFolderName(f.name); setEditFolderIcon(f.icon || '📁')
   }
 
   async function createFolder() {
@@ -220,29 +206,10 @@ export default function LibraryPage() {
             <span style={{ marginLeft: 'auto', fontSize: '9px', color: '#aaa' }}>{texts.length}</span>
           </div>
           {folders.map(f => (
-            <div key={f.id}>
-              {editingFolder === f.id ? (
-                <div style={{ padding: '6px 8px', background: C.tealLight, borderLeft: `2px solid ${C.tealDark}` }}>
-                  <input value={editFolderName} onChange={e => setEditFolderName(e.target.value)} onKeyDown={e => e.key === 'Enter' && renameFolder()} autoFocus style={{ width: '100%', padding: '4px 6px', border: `1px solid ${C.tealDark}`, borderRadius: '4px', fontSize: '11px', marginBottom: '4px', background: C.white, outline: 'none' }} />
-                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                    {['📁','📚','💼','✈️','🎯','🌍','🏥','💻','⭐','📝','📡','🛒'].map(ic => (
-                      <button key={ic} onClick={() => setEditFolderIcon(ic)} style={{ padding: '2px', fontSize: '12px', background: editFolderIcon === ic ? C.teal : 'none', border: 'none', borderRadius: '3px', cursor: 'pointer' }}>{ic}</button>
-                    ))}
-                  </div>
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    <button onClick={renameFolder} style={{ flex: 1, padding: '4px', background: C.primary, color: '#fff', border: 'none', borderRadius: '4px', fontSize: '10px', cursor: 'pointer', fontWeight: 600 }}>OK</button>
-                    <button onClick={() => setEditingFolder(null)} style={{ flex: 1, padding: '4px', background: C.sand, border: `1px solid ${C.border}`, borderRadius: '4px', fontSize: '10px', cursor: 'pointer', color: C.text2 }}>✕</button>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ padding: '5px 8px 5px 10px', fontSize: '12px', cursor: 'pointer', color: activeFolder === f.id ? C.primary : C.text2, background: activeFolder === f.id ? C.tealLight : 'none', borderLeft: `2px solid ${activeFolder === f.id ? C.tealDark : 'transparent'}`, display: 'flex', alignItems: 'center', gap: '4px', fontWeight: activeFolder === f.id ? 600 : 400 }}>
-                  <span onClick={() => setActiveFolder(f.id)} style={{ fontSize: '12px' }}>{f.icon}</span>
-                  <span onClick={() => setActiveFolder(f.id)} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{f.name}</span>
-                  <span style={{ fontSize: '9px', color: '#bbb', flexShrink: 0 }}>{texts.filter(t => t.folder_id === f.id).length}</span>
-                  <button onClick={e => startEditFolder(f, e)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#bbb', padding: '0 1px', lineHeight: 1, flexShrink: 0 }} title="Umbenennen">✏</button>
-                  <button onClick={e => { e.stopPropagation(); setConfirmDelete(f.id) }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '10px', color: '#ccc', padding: '0 1px', lineHeight: 1, flexShrink: 0 }} title="Löschen">✕</button>
-                </div>
-              )}
+            <div key={f.id} onClick={() => setActiveFolder(f.id)} style={{ padding: '6px 10px', fontSize: '12px', cursor: 'pointer', color: activeFolder === f.id ? C.primary : C.text2, background: activeFolder === f.id ? C.tealLight : 'none', borderLeft: `2px solid ${activeFolder === f.id ? C.tealDark : 'transparent'}`, display: 'flex', alignItems: 'center', gap: '5px', fontWeight: activeFolder === f.id ? 600 : 400 }}>
+              <span style={{ fontSize: '12px' }}>{f.icon}</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{f.name}</span>
+              <span style={{ fontSize: '9px', color: '#bbb', flexShrink: 0 }}>{texts.filter(t => t.folder_id === f.id).length}</span>
             </div>
           ))}
           <div onClick={() => setShowNewFolder(!showNewFolder)} style={{ padding: '6px 10px', fontSize: '11px', cursor: 'pointer', color: C.tealDark, fontWeight: 500, marginTop: '4px' }}>+ Ordner</div>
