@@ -22,6 +22,10 @@ export default function VocabPage() {
   const [result, setResult] = useState<'correct'|'wrong'|null>(null)
   const [showNewSet, setShowNewSet] = useState(false)
   const [showNewCard, setShowNewCard] = useState(false)
+  const [showImport, setShowImport] = useState(false)
+  const [importText, setImportText] = useState('')
+  const [importPreview, setImportPreview] = useState<{de:string,en:string}[]>([])
+  const [importLoading, setImportLoading] = useState(false)
   const [newSetName, setNewSetName] = useState('')
   const [newSetIcon, setNewSetIcon] = useState('📝')
   const [newCardDe, setNewCardDe] = useState('')
@@ -70,6 +74,42 @@ export default function VocabPage() {
     const synonyms = newCardSyn.split(',').map(s=>s.trim()).filter(Boolean)
     await supabase.from('vocab_cards').insert({set_id:activeSet.id,word_de:newCardDe,word_en:newCardEn,synonyms,example_sentence:''})
     setNewCardDe('');setNewCardEn('');setNewCardSyn('');setShowNewCard(false);loadCards(activeSet.id)
+  }
+
+  function parseImport(raw: string) {
+    const lines = raw.split('\n').map(l => l.trim()).filter(Boolean)
+    const parsed: {de:string,en:string}[] = []
+    for (const line of lines) {
+      // Try different separators: =, ;, tab, multiple spaces
+      const separators = [/\s*=\s*/, /\s*;\s*/, /\t/, /\s{2,}/]
+      let found = false
+      for (const sep of separators) {
+        const parts = line.split(sep)
+        if (parts.length >= 2) {
+          const de = parts[0].trim()
+          const en = parts.slice(1).join(' ').trim()
+          if (de && en) { parsed.push({de, en}); found = true; break }
+        }
+      }
+      if (!found && line.includes(' ') && !line.includes('=') && !line.includes(';')) {
+        // Last resort: split on first space
+        const idx = line.indexOf(' ')
+        const de = line.slice(0, idx).trim()
+        const en = line.slice(idx).trim()
+        if (de && en) parsed.push({de, en})
+      }
+    }
+    setImportPreview(parsed)
+  }
+
+  async function importCards() {
+    if (!importPreview.length || !activeSet) return
+    setImportLoading(true)
+    const toInsert = importPreview.map(p => ({set_id: activeSet.id, word_de: p.de, word_en: p.en, synonyms: [], example_sentence: ''}))
+    await supabase.from('vocab_cards').insert(toInsert)
+    setImportText(''); setImportPreview([]); setShowImport(false)
+    loadCards(activeSet.id)
+    setImportLoading(false)
   }
 
   function startQuiz() {
@@ -153,7 +193,48 @@ export default function VocabPage() {
       {topbar(()=>setView('sets'),`${activeSet.icon} ${activeSet.name}`,<span style={{fontSize:'12px',color:C.teal}}>{cards.length} Karten</span>)}
       <div style={{maxWidth:'600px',margin:'0 auto',padding:'1rem'}}>
         {cards.length>0&&<button onClick={startQuiz} style={{width:'100%',padding:'11px',background:C.primary,color:'#fff',border:'none',borderRadius:'8px',fontSize:'14px',fontWeight:600,cursor:'pointer',marginBottom:'8px'}}>▶ Quiz starten ({cards.length} Karten)</button>}
-        <button onClick={()=>setShowNewCard(!showNewCard)} style={{width:'100%',padding:'9px',background:C.white,border:`1.5px solid ${C.tealDark}`,color:C.primary,borderRadius:'8px',fontSize:'13px',fontWeight:600,cursor:'pointer',marginBottom:'1rem'}}>+ Vokabel hinzufügen</button>
+        <div style={{display:'flex',gap:'8px',marginBottom:'1rem'}}>
+          <button onClick={()=>{setShowNewCard(!showNewCard);setShowImport(false)}} style={{flex:1,padding:'9px',background:C.white,border:`1.5px solid ${C.tealDark}`,color:C.primary,borderRadius:'8px',fontSize:'13px',fontWeight:600,cursor:'pointer'}}>+ Einzeln</button>
+          <button onClick={()=>{setShowImport(!showImport);setShowNewCard(false)}} style={{flex:1,padding:'9px',background:C.white,border:`1.5px solid ${C.tealDark}`,color:C.primary,borderRadius:'8px',fontSize:'13px',fontWeight:600,cursor:'pointer'}}>⬆ Liste importieren</button>
+        </div>
+        {showImport&&(
+          <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:'10px',padding:'12px',marginBottom:'1rem'}}>
+            <div style={{fontSize:'12px',color:C.text2,marginBottom:'6px',lineHeight:'1.5'}}>
+              Füge deine Vokabelliste ein. Unterstützte Formate pro Zeile:<br/>
+              <code style={{fontSize:'11px',background:C.sand,padding:'1px 4px',borderRadius:'3px'}}>Wort = word</code> &nbsp;
+              <code style={{fontSize:'11px',background:C.sand,padding:'1px 4px',borderRadius:'3px'}}>Wort=word</code> &nbsp;
+              <code style={{fontSize:'11px',background:C.sand,padding:'1px 4px',borderRadius:'3px'}}>Wort ; word</code> &nbsp;
+              <code style={{fontSize:'11px',background:C.sand,padding:'1px 4px',borderRadius:'3px'}}>Wort;word</code>
+            </div>
+            <textarea
+              value={importText}
+              onChange={e => { setImportText(e.target.value); parseImport(e.target.value) }}
+              placeholder={'die Gelegenheit = opportunity\nverantwortlich = responsible\ndie Herausforderung ; challenge'}
+              rows={6}
+              style={{width:'100%',padding:'9px 11px',border:`1.5px solid ${C.border}`,borderRadius:'7px',fontSize:'13px',marginBottom:'8px',background:C.sand,outline:'none',resize:'vertical',lineHeight:'1.6',fontFamily:'monospace'}}
+            />
+            {importPreview.length>0&&(
+              <div style={{marginBottom:'8px'}}>
+                <div style={{fontSize:'11px',fontWeight:600,color:C.primary,marginBottom:'5px'}}>{importPreview.length} Vokabeln erkannt:</div>
+                <div style={{maxHeight:'120px',overflowY:'auto',background:C.sand,borderRadius:'6px',padding:'6px 8px'}}>
+                  {importPreview.map((p,i)=>(
+                    <div key={i} style={{fontSize:'12px',padding:'3px 0',borderBottom:i<importPreview.length-1?`1px solid ${C.border}`:'none',display:'flex',gap:'8px'}}>
+                      <span style={{color:C.text,fontWeight:500,minWidth:'80px'}}>{p.de}</span>
+                      <span style={{color:C.text2}}>→</span>
+                      <span style={{color:C.accent||C.primary}}>{p.en}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div style={{display:'flex',gap:'8px'}}>
+              <button onClick={importCards} disabled={importPreview.length===0||importLoading} style={{flex:1,padding:'9px',background:importPreview.length>0?C.primary:'#ccc',color:'#fff',border:'none',borderRadius:'7px',cursor:importPreview.length>0?'pointer':'default',fontWeight:600,fontSize:'13px'}}>
+                {importLoading?'Importiere...`':`${importPreview.length} Karten importieren`}
+              </button>
+              <button onClick={()=>{setShowImport(false);setImportText('');setImportPreview([])}} style={{padding:'9px 14px',background:C.sand,border:`1px solid ${C.border}`,borderRadius:'7px',cursor:'pointer',color:C.text2,fontSize:'13px'}}>Abbrechen</button>
+            </div>
+          </div>
+        )}
         {showNewCard&&(
           <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:'10px',padding:'12px',marginBottom:'1rem'}}>
             {['Deutsch','Englisch','Synonyme (kommagetrennt, optional)'].map((ph,i)=>{
