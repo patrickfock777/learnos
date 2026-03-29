@@ -21,7 +21,7 @@ export default function AuthPage() {
     sub: { color: '#ADD8E6', fontSize: '12px', marginTop: '4px', opacity: 0.9 },
     body: { padding: '1.5rem' },
     tabs: { display: 'flex', borderBottom: '2px solid #dde8ec', marginBottom: '1.25rem' },
-    tab: (active: boolean): React.CSSProperties => ({ flex: 1, padding: '8px', textAlign: 'center', fontSize: '13px', fontWeight: 500, cursor: 'pointer', color: active ? '#1a3a4a' : '#5a7280', borderBottom: `2px solid ${active ? '#7BB8CC' : 'transparent'}`, marginBottom: '-2px', background: 'none', border: 'none', borderBottom: `2px solid ${active ? '#7BB8CC' : 'transparent'}` }),
+
     input: { width: '100%', padding: '10px 12px', border: '1.5px solid #dde8ec', borderRadius: '8px', fontSize: '14px', marginBottom: '10px', color: '#1a2c35', background: '#f7f4f0', outline: 'none' },
     btn: { width: '100%', padding: '11px', background: '#1a3a4a', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', letterSpacing: '0.2px' },
     error: { fontSize: '13px', color: '#e24b4a', background: '#fef0f0', padding: '8px 12px', borderRadius: '7px', marginBottom: '10px', border: '1px solid #f5c0c0' },
@@ -58,7 +58,7 @@ export default function AuthPage() {
         <div style={s.body}>
           <div style={s.tabs}>
             {(['login','signup'] as const).map(m => (
-              <button key={m} onClick={() => setMode(m)} style={s.tab(mode === m)}>
+              <button key={m} onClick={() => setMode(m)} style={{ flex: 1, padding: '8px', textAlign: 'center', fontSize: '13px', fontWeight: 500, cursor: 'pointer', color: mode === m ? '#1a3a4a' : '#5a7280', borderBottom: `2px solid ${mode === m ? '#7BB8CC' : 'transparent'}`, marginBottom: '-2px', background: 'none', border: 'none' }}>
                 {m === 'login' ? 'Einloggen' : 'Registrieren'}
               </button>
             ))}
