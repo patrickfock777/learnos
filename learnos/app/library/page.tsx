@@ -103,7 +103,7 @@ export default function LibraryPage() {
     if (!newFolderName.trim()||!workspaceId) return
     await supabase.from('folders').insert({name:newFolderName,icon:newFolderIcon,workspace_id:workspaceId,color:C.tealLight,parent_id:parentId})
     setNewFolderName('');setNewFolderIcon('📁');setAddingFolderUnder(null);loadData(userId)
-    if (parentId) setExpandedFolders(prev=>new Set([...prev,parentId]))
+    if (parentId) setExpandedFolders(prev=>{const n=new Set(prev);n.add(parentId);return n})
   }
 
   async function renameFolder() {
@@ -122,7 +122,7 @@ export default function LibraryPage() {
     if (targetId&&isChild(dragFolderId)) { setDragFolderId(null);setDragOverId(null);return }
     await supabase.from('folders').update({parent_id:targetId}).eq('id',dragFolderId)
     setDragFolderId(null);setDragOverId(null)
-    if (targetId) setExpandedFolders(prev=>new Set([...prev,targetId]))
+    if (targetId) setExpandedFolders(prev=>{const n=new Set(prev);n.add(targetId);return n})
     loadData(userId)
   }
 
