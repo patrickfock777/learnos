@@ -8,6 +8,7 @@ const modules = [
   { href: '/vocab',   icon: '🗂',  label: 'Vokabeln',  desc: 'Sets & Quiz',   bg: '#fdf8f2', border: '#e8d9c0' },
   { href: '/writing', icon: '✍️', label: 'Schreiben', desc: 'KI-Feedback',    bg: '#f2f7f2', border: '#b8ddb8' },
   { href: '/grammar', icon: '🎯', label: 'Grammatik', desc: 'Zeiten erkennen',bg: '#f5f2fa', border: '#c8b8e8' },
+  { href: '/youtube', icon: '▶️', label: 'YouTube', desc: 'Video zusammenfassen', bg: '#fff5f5', border: '#ffb8b8' },
 ]
 
 export default function Dashboard() {
