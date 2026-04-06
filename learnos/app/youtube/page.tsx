@@ -25,6 +25,7 @@ export default function YoutubePage() {
   const [editTitle, setEditTitle] = useState('')
   const [editSummary, setEditSummary] = useState('')
   const [selectedFolder, setSelectedFolder] = useState<string|null>(null)
+  const [saving, setSaving] = useState(false)
   const [focus, setFocus] = useState('')
 
   useEffect(() => {
