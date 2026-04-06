@@ -83,7 +83,41 @@ async function fetchTranscript(videoId: string): Promise<{text:string, title:str
 
 export async function POST(req: NextRequest) {
   try {
-    const { url, language = 'en', focus = '' } = await req.json()
+    const { url, language = 'en', focus = '', transcript: pastedTranscript, videoTitle: pastedTitle } = await req.json()
+
+    // If transcript was pasted directly, skip YouTube fetching
+    if (pastedTranscript) {
+      const truncated = pastedTranscript.length > 10000 ? pastedTranscript.slice(0, 10000) + '...' : pastedTranscript
+      const videoTitle = pastedTitle || 'YouTube Video'
+
+      const langInstruction = language === 'de'
+        ? 'Erstelle eine strukturierte Zusammenfassung auf DEUTSCH.'
+        : 'Create a structured summary in ENGLISH.'
+
+      const focusInstruction = focus.trim()
+        ? `\n\nIMPORTANT FOCUS: "${focus}" - Filter and structure the summary with this focus. Add a specific section with concrete takeaways.`
+        : ''
+
+      const prompt = `You are summarizing a YouTube video transcript. ${langInstruction}${focusInstruction}
+
+Video title: "${videoTitle}"
+
+Transcript:
+${truncated}
+
+Create a clear summary with intro, 5-8 key points as paragraphs, and conclusion. Respond ONLY with JSON:
+{"title":"suggested title","summary":"full summary text"}`
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY!, 'anthropic-version': '2023-06-01' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 2000, messages: [{ role: 'user', content: prompt }] })
+      })
+      const data = await response.json()
+      const raw = data.content[0].text.replace(/```json|```/g, '').trim()
+      const result = JSON.parse(raw)
+      return NextResponse.json({ videoId: '', videoTitle, suggestedTitle: result.title, summary: result.summary, transcriptLength: pastedTranscript.length })
+    }
 
     const videoId = extractVideoId(url)
     if (!videoId) {
