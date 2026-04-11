@@ -46,7 +46,7 @@ function findPatterns(errors: ErrorEntry[]): Pattern[] {
     for (let i = 0; i < Math.min(t.length, c.length) - 1; i++) {
       if (t[i] !== c[i] && t[i+1] !== undefined && c[i+1] !== undefined) {
         const tp = t[i] + t[i+1], cp = c[i] + c[i+1]
-        if (tp !== cp && [...tp].sort().join('') === [...cp].sort().join('')) {
+        if (tp !== cp && tp.split('').sort().join('') === cp.split('').sort().join('')) {
           const key = `"${cp}" → du schreibst "${tp}"`
           map[key] = { count:(map[key]?.count||0)+1, example:`${e.correct} (du: ${e.typed})` }
           break
