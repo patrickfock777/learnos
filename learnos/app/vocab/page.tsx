@@ -81,7 +81,7 @@ function getHint(typed: string, correct: string): string {
   for (let i = 0; i < Math.min(t.length, c.length) - 1; i++) {
     if (t[i] !== c[i] && t[i+1] !== undefined && c[i+1] !== undefined) {
       const tp = t[i]+t[i+1], cp = c[i]+c[i+1]
-      if (tp !== cp && [...tp].sort().join('') === [...cp].sort().join(''))
+      if (tp !== cp && tp.split('').sort().join('') === cp.split('').sort().join(''))
         return `💡 Tipp: Du schreibst "${cp}" oft als "${tp}"`
     }
   }
