@@ -12,3 +12,4 @@ export interface VocabProgress { user_id: string; card_id: string; correct: numb
 export interface WritingSession { id: string; user_id: string; title: string; original_text: string; improved_text: string | null; feedback: {error:string;correction:string;explanation:string}[] | null; score: number | null; created_at: string }
 export interface GrammarSentence { id: string; sentence: string; tense: Tense; signal_words: string[]; explanation: string; difficulty: 1|2|3; workspace_id: string }
 export interface GrammarProgress { user_id: string; sentence_id: string; answered_tense: string; was_correct: boolean; answered_at: string }
+export interface Note { id: string; content: string; type: 'note' | 'vocab' | 'link'; status: 'inbox' | 'processed'; metadata: Record<string, any>; folder_id: string | null; workspace_id: string; created_by: string; created_at: string }

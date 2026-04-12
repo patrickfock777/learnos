@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 
 const modules = [
+  { href: '/notes',   icon: '📥', label: 'Quick Capture', desc: 'Notizen & Links', bg: '#fefce8', border: '#fde68a' },
   { href: '/library', icon: '📖', label: 'Bibliothek', desc: 'Texte & Ordner', bg: '#E8F6FA', border: '#ADD8E6' },
   { href: '/vocab',   icon: '🗂',  label: 'Vokabeln',  desc: 'Sets & Quiz',   bg: '#fdf8f2', border: '#e8d9c0' },
   { href: '/writing', icon: '✍️', label: 'Schreiben', desc: 'KI-Feedback',    bg: '#f2f7f2', border: '#b8ddb8' },
