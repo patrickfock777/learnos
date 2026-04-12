@@ -146,15 +146,17 @@ export default function LibraryPage() {
   function toggleFolder(id:string) { setExpandedFolders(prev=>{const n=new Set(prev);n.has(id)?n.delete(id):n.add(id);return n}) }
   const getChildren = (parentId:string|null) => folders.filter(f=>f.parent_id===parentId)
 
+  const [folderMenu, setFolderMenu] = useState<string | null>(null)
+
   const AddFolderInline = ({parentId}:{parentId:string|null}) => (
-    <div style={{padding:'8px 10px',background:C.card2,borderRadius:'8px',margin:'4px 0',border:`1px solid ${C.border}`}}>
-      <input value={newFolderName} onChange={e=>setNewFolderName(e.target.value)} onKeyDown={e=>e.key==='Enter'&&createFolder(parentId)} placeholder="Ordner-Name..." autoFocus style={{width:'100%',padding:'6px 8px',border:`1px solid ${C.border}`,borderRadius:'6px',fontSize:'13px',marginBottom:'6px',background:C.bg,color:C.text,outline:'none'}} />
-      <div style={{display:'flex',gap:'4px',flexWrap:'wrap',marginBottom:'6px'}}>
-        {folderIcons.map(ic=><button key={ic} onClick={()=>setNewFolderIcon(ic)} style={{padding:'3px 5px',fontSize:'14px',background:newFolderIcon===ic?C.cyanGlow:'none',border:newFolderIcon===ic?'1px solid rgba(0,229,200,0.3)':'1px solid transparent',borderRadius:'4px',cursor:'pointer'}}>{ic}</button>)}
+    <div style={{margin:'6px 10px',padding:'12px',background:C.bg,borderRadius:'12px',border:`1px solid ${C.border}`}}>
+      <input value={newFolderName} onChange={e=>setNewFolderName(e.target.value)} onKeyDown={e=>e.key==='Enter'&&createFolder(parentId)} placeholder="Ordner-Name..." autoFocus style={{width:'100%',padding:'8px 10px',border:`1px solid ${C.border}`,borderRadius:'8px',fontSize:'14px',marginBottom:'8px',background:C.card2,color:C.text,outline:'none'}} />
+      <div style={{display:'flex',gap:'5px',flexWrap:'wrap',marginBottom:'10px'}}>
+        {folderIcons.map(ic=><button key={ic} onClick={()=>setNewFolderIcon(ic)} style={{width:'32px',height:'32px',fontSize:'16px',background:newFolderIcon===ic?C.cyanGlow:C.card2,border:newFolderIcon===ic?'1px solid rgba(0,229,200,0.3)':`1px solid ${C.border}`,borderRadius:'8px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>{ic}</button>)}
       </div>
-      <div style={{display:'flex',gap:'6px'}}>
-        <button onClick={()=>createFolder(parentId)} style={{flex:1,padding:'6px',background:`linear-gradient(135deg, ${C.cyan}, ${C.cyan2})`,color:C.bg,border:'none',borderRadius:'6px',fontSize:'12px',cursor:'pointer',fontWeight:700}}>Erstellen</button>
-        <button onClick={()=>{setAddingFolderUnder(null);setNewFolderName('');setNewFolderIcon('📁')}} style={{flex:1,padding:'6px',background:C.card,border:`1px solid ${C.border}`,borderRadius:'6px',fontSize:'12px',cursor:'pointer',color:C.text2}}>Abbrechen</button>
+      <div style={{display:'flex',gap:'8px'}}>
+        <button onClick={()=>createFolder(parentId)} style={{flex:1,padding:'8px',background:`linear-gradient(135deg, ${C.cyan}, ${C.cyan2})`,color:C.bg,border:'none',borderRadius:'8px',fontSize:'13px',cursor:'pointer',fontWeight:700}}>Erstellen</button>
+        <button onClick={()=>{setAddingFolderUnder(null);setNewFolderName('');setNewFolderIcon('����')}} style={{flex:1,padding:'8px',background:C.card2,border:`1px solid ${C.border}`,borderRadius:'8px',fontSize:'13px',cursor:'pointer',color:C.text2}}>Abbrechen</button>
       </div>
     </div>
   )
@@ -162,37 +164,70 @@ export default function LibraryPage() {
   const FolderRow = ({f,depth=0}:{f:Folder,depth?:number}) => {
     const children = getChildren(f.id); const isExpanded = expandedFolders.has(f.id); const isActive = activeFolder===f.id
     const isEditing = editingFolder===f.id; const isDragOver = dragOverId===f.id; const textCount = texts.filter(t=>t.folder_id===f.id).length
+    const showMenu = folderMenu===f.id
+
     return (
-      <div onDragOver={e=>{e.preventDefault();setDragOverId(f.id)}} onDrop={()=>handleFolderDrop(f.id)} onDragLeave={()=>setDragOverId(null)} style={{background:isDragOver?C.cyanGlow:'none',borderRadius:'6px',transition:'background 0.15s'}}>
+      <div onDragOver={e=>{e.preventDefault();setDragOverId(f.id)}} onDrop={()=>handleFolderDrop(f.id)} onDragLeave={()=>setDragOverId(null)}>
         {isEditing ? (
-          <div style={{padding:'8px 10px',paddingLeft:`${10+depth*16}px`,background:C.card2,borderRadius:'6px',margin:'2px 0'}}>
-            <input value={editFolderName} onChange={e=>setEditFolderName(e.target.value)} onKeyDown={e=>e.key==='Enter'&&renameFolder()} autoFocus style={{width:'100%',padding:'6px 8px',border:`1px solid ${C.border}`,borderRadius:'6px',fontSize:'13px',marginBottom:'6px',background:C.bg,color:C.text,outline:'none'}} />
-            <div style={{display:'flex',gap:'4px',flexWrap:'wrap',marginBottom:'6px'}}>
-              {folderIcons.map(ic=><button key={ic} onClick={()=>setEditFolderIcon(ic)} style={{padding:'3px 5px',fontSize:'14px',background:editFolderIcon===ic?C.cyanGlow:'none',border:editFolderIcon===ic?'1px solid rgba(0,229,200,0.3)':'1px solid transparent',borderRadius:'4px',cursor:'pointer'}}>{ic}</button>)}
+          <div style={{margin:'4px 10px',padding:'12px',background:C.bg,borderRadius:'12px',border:`1px solid ${C.border}`}}>
+            <input value={editFolderName} onChange={e=>setEditFolderName(e.target.value)} onKeyDown={e=>e.key==='Enter'&&renameFolder()} autoFocus style={{width:'100%',padding:'8px 10px',border:`1px solid ${C.border}`,borderRadius:'8px',fontSize:'14px',marginBottom:'8px',background:C.card2,color:C.text,outline:'none'}} />
+            <div style={{display:'flex',gap:'5px',flexWrap:'wrap',marginBottom:'10px'}}>
+              {folderIcons.map(ic=><button key={ic} onClick={()=>setEditFolderIcon(ic)} style={{width:'32px',height:'32px',fontSize:'16px',background:editFolderIcon===ic?C.cyanGlow:C.card2,border:editFolderIcon===ic?'1px solid rgba(0,229,200,0.3)':`1px solid ${C.border}`,borderRadius:'8px',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>{ic}</button>)}
             </div>
-            <div style={{display:'flex',gap:'6px'}}>
-              <button onClick={renameFolder} style={{flex:1,padding:'5px',background:`linear-gradient(135deg, ${C.cyan}, ${C.cyan2})`,color:C.bg,border:'none',borderRadius:'5px',fontSize:'11px',cursor:'pointer',fontWeight:700}}>OK</button>
-              <button onClick={()=>setEditingFolder(null)} style={{flex:1,padding:'5px',background:C.card,border:`1px solid ${C.border}`,borderRadius:'5px',fontSize:'11px',cursor:'pointer',color:C.text2}}>Abbruch</button>
+            <div style={{display:'flex',gap:'8px'}}>
+              <button onClick={renameFolder} style={{flex:1,padding:'8px',background:`linear-gradient(135deg, ${C.cyan}, ${C.cyan2})`,color:C.bg,border:'none',borderRadius:'8px',fontSize:'13px',cursor:'pointer',fontWeight:700}}>Speichern</button>
+              <button onClick={()=>setEditingFolder(null)} style={{flex:1,padding:'8px',background:C.card2,border:`1px solid ${C.border}`,borderRadius:'8px',fontSize:'13px',cursor:'pointer',color:C.text2}}>Abbruch</button>
             </div>
           </div>
         ) : (
-          <div draggable onDragStart={()=>setDragFolderId(f.id)} onDragEnd={()=>{setDragFolderId(null);setDragOverId(null)}}
-            onClick={()=>{setActiveFolder(f.id);setShowSidebar(false)}}
-            style={{paddingLeft:`${8+depth*16}px`,paddingRight:'6px',paddingTop:'10px',paddingBottom:'10px',display:'flex',alignItems:'center',gap:'6px',cursor:'pointer',color:isActive?C.cyan:C.text2,background:isActive?C.cyanGlow:'none',borderLeft:`2px solid ${isActive?C.cyan:'transparent'}`,borderRadius:isActive?'0 6px 6px 0':'0',fontSize:'13px',fontWeight:isActive?600:400,transition:'all 0.15s'}}>
-            <span onClick={e=>{e.stopPropagation();if(children.length>0)toggleFolder(f.id)}} style={{fontSize:'10px',color:C.text3,width:'14px',flexShrink:0,cursor:children.length>0?'pointer':'default',transition:'transform 0.15s',transform:isExpanded?'rotate(90deg)':'none',display:'inline-block'}}>
-              {children.length>0?'›':''}
-            </span>
-            <span style={{fontSize:'16px'}}>{f.icon}</span>
-            <span style={{flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.name}</span>
-            {textCount>0&&<span style={{fontSize:'10px',color:C.text3,background:C.card2,padding:'1px 6px',borderRadius:'8px'}}>{textCount}</span>}
-            <div style={{display:'flex',gap:'2px',opacity:0.5}} onClick={e=>e.stopPropagation()}>
-              <button onClick={()=>{setAddingFolderUnder(addingFolderUnder===f.id?null:f.id);setNewFolderName('');if(!expandedFolders.has(f.id))toggleFolder(f.id)}} style={{background:'none',border:'none',cursor:'pointer',fontSize:'12px',color:C.cyan,padding:'2px 3px',lineHeight:1}}>+</button>
-              <button onClick={()=>{setEditingFolder(f.id);setEditFolderName(f.name);setEditFolderIcon(f.icon||'📁')}} style={{background:'none',border:'none',cursor:'pointer',fontSize:'11px',color:C.text3,padding:'2px 3px',lineHeight:1}}>✏</button>
-              <button onClick={()=>setConfirmDelete({id:f.id,type:'folder',name:f.name})} style={{background:'none',border:'none',cursor:'pointer',fontSize:'11px',color:C.text3,padding:'2px 3px',lineHeight:1}}>✕</button>
+          <div draggable onDragStart={()=>setDragFolderId(f.id)} onDragEnd={()=>{setDragFolderId(null);setDragOverId(null)}}>
+            {/* Folder item */}
+            <div
+              style={{
+                marginLeft:`${depth*12}px`,marginRight:'6px',marginBottom:'2px',
+                padding:'12px',
+                display:'flex',alignItems:'center',gap:'10px',cursor:'pointer',
+                color:isActive?C.text:C.text2,
+                background:isActive?C.cyanGlow:isDragOver?'rgba(0,229,200,0.08)':'transparent',
+                border:isActive?'1px solid rgba(0,229,200,0.25)':'1px solid transparent',
+                borderRadius:'10px',
+                transition:'all 0.15s',
+              }}
+            >
+              {/* Expand toggle */}
+              <div
+                onClick={e=>{e.stopPropagation();if(children.length>0)toggleFolder(f.id)}}
+                style={{width:'24px',height:'24px',display:'flex',alignItems:'center',justifyContent:'center',borderRadius:'6px',background:children.length>0?C.card2:'transparent',cursor:children.length>0?'pointer':'default',flexShrink:0,transition:'background 0.15s'}}
+              >
+                {children.length>0&&<span style={{fontSize:'11px',color:C.text3,transition:'transform 0.2s',transform:isExpanded?'rotate(90deg)':'none',display:'inline-block'}}>▶</span>}
+              </div>
+              {/* Icon + name */}
+              <div onClick={()=>{setActiveFolder(f.id);setShowSidebar(false)}} style={{flex:1,display:'flex',alignItems:'center',gap:'8px',minWidth:0}}>
+                <span style={{fontSize:'18px'}}>{f.icon}</span>
+                <span style={{fontSize:'14px',fontWeight:isActive?600:400,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{f.name}</span>
+              </div>
+              {/* Count badge */}
+              {textCount>0&&<span style={{fontSize:'10px',color:isActive?C.cyan:C.text3,background:isActive?'rgba(0,229,200,0.2)':C.card2,padding:'2px 8px',borderRadius:'10px',fontWeight:600,flexShrink:0}}>{textCount}</span>}
+              {/* Menu button */}
+              <button
+                onClick={e=>{e.stopPropagation();setFolderMenu(showMenu?null:f.id)}}
+                style={{width:'28px',height:'28px',display:'flex',alignItems:'center',justifyContent:'center',background:showMenu?C.cyanGlow:'transparent',border:showMenu?'1px solid rgba(0,229,200,0.3)':'1px solid transparent',borderRadius:'6px',cursor:'pointer',color:showMenu?C.cyan:C.text3,fontSize:'14px',flexShrink:0}}
+              >
+                ···
+              </button>
             </div>
+
+            {/* Context menu */}
+            {showMenu&&(
+              <div style={{marginLeft:`${depth*12+12}px`,marginRight:'6px',marginBottom:'4px',padding:'6px',background:C.bg,border:`1px solid ${C.border}`,borderRadius:'10px',display:'flex',gap:'4px'}}>
+                <button onClick={()=>{setFolderMenu(null);setAddingFolderUnder(f.id);setNewFolderName('');if(!expandedFolders.has(f.id))toggleFolder(f.id)}} style={{flex:1,padding:'8px 6px',background:C.cyanGlow,border:'1px solid rgba(0,229,200,0.2)',borderRadius:'8px',fontSize:'11px',cursor:'pointer',color:C.cyan,fontWeight:600}}>+ Unterordner</button>
+                <button onClick={()=>{setFolderMenu(null);setEditingFolder(f.id);setEditFolderName(f.name);setEditFolderIcon(f.icon||'📁')}} style={{flex:1,padding:'8px 6px',background:C.card2,border:`1px solid ${C.border}`,borderRadius:'8px',fontSize:'11px',cursor:'pointer',color:C.text2,fontWeight:500}}>✏ Bearbeiten</button>
+                <button onClick={()=>{setFolderMenu(null);setConfirmDelete({id:f.id,type:'folder',name:f.name})}} style={{flex:1,padding:'8px 6px',background:C.dangerGlow,border:'1px solid rgba(239,68,68,0.2)',borderRadius:'8px',fontSize:'11px',cursor:'pointer',color:C.danger,fontWeight:500}}>✕ Löschen</button>
+              </div>
+            )}
           </div>
         )}
-        {addingFolderUnder===f.id&&<div style={{paddingLeft:`${16+depth*16}px`,paddingRight:'8px'}}><AddFolderInline parentId={f.id}/></div>}
+        {addingFolderUnder===f.id&&<div style={{marginLeft:`${(depth+1)*12}px`}}><AddFolderInline parentId={f.id}/></div>}
         {isExpanded&&children.map(child=><FolderRow key={child.id} f={child} depth={depth+1}/>)}
       </div>
     )
@@ -319,16 +354,27 @@ export default function LibraryPage() {
       <div style={{maxWidth:'600px',margin:'0 auto',position:'relative'}}>
         {/* Slide-in sidebar */}
         <div style={{position:'fixed',left:0,top:0,bottom:0,width:'270px',background:C.card,borderRight:`1px solid ${C.border}`,overflowY:'auto',zIndex:90,transform:showSidebar?'translateX(0)':'translateX(-100%)',transition:'transform 0.25s ease',paddingTop:'60px',paddingBottom:'80px'}}>
-          <div style={{padding:'12px 14px 6px',fontSize:'10px',fontWeight:700,color:C.text3,letterSpacing:'0.07em',textTransform:'uppercase' as const,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-            Ordner
-            <button onClick={()=>setAddingFolderUnder(addingFolderUnder==='root'?null:'root')} style={{background:'none',border:'none',cursor:'pointer',fontSize:'14px',color:C.cyan,fontWeight:700,padding:0}}>+</button>
+          {/* Sidebar header */}
+          <div style={{padding:'16px 14px 8px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <span style={{fontSize:'16px',fontWeight:700,color:C.text}}>Ordner</span>
+            <button onClick={()=>setAddingFolderUnder(addingFolderUnder==='root'?null:'root')} style={{width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center',background:C.cyanGlow,border:'1px solid rgba(0,229,200,0.25)',borderRadius:'8px',cursor:'pointer',fontSize:'16px',color:C.cyan,fontWeight:700}}>+</button>
           </div>
-          {addingFolderUnder==='root'&&<div style={{padding:'0 10px 8px'}}><AddFolderInline parentId={null}/></div>}
-          <div onDragOver={e=>{e.preventDefault();setDragOverId('root')}} onDrop={()=>handleFolderDrop(null)} onDragLeave={()=>setDragOverId(null)}
+          {addingFolderUnder==='root'&&<AddFolderInline parentId={null}/>}
+
+          {/* All texts button */}
+          <div
+            onDragOver={e=>{e.preventDefault();setDragOverId('root')}} onDrop={()=>handleFolderDrop(null)} onDragLeave={()=>setDragOverId(null)}
             onClick={()=>{setActiveFolder(null);setShowSidebar(false)}}
-            style={{padding:'10px 10px 10px 12px',fontSize:'13px',cursor:'pointer',color:!activeFolder?C.cyan:C.text2,background:!activeFolder?C.cyanGlow:dragOverId==='root'?C.cyanGlow:'none',borderLeft:`2px solid ${!activeFolder?C.cyan:'transparent'}`,display:'flex',alignItems:'center',gap:'6px',fontWeight:!activeFolder?600:400}}>
-            <span>📁</span><span style={{flex:1}}>Alle Texte</span><span style={{fontSize:'10px',color:C.text3,background:C.card2,padding:'1px 6px',borderRadius:'8px'}}>{texts.length}</span>
+            style={{margin:'4px 6px',padding:'12px',borderRadius:'10px',fontSize:'14px',cursor:'pointer',color:!activeFolder?C.text:C.text2,background:!activeFolder?C.cyanGlow:dragOverId==='root'?'rgba(0,229,200,0.08)':'transparent',border:!activeFolder?'1px solid rgba(0,229,200,0.25)':'1px solid transparent',display:'flex',alignItems:'center',gap:'10px',fontWeight:!activeFolder?600:400,transition:'all 0.15s'}}
+          >
+            <div style={{width:'24px',height:'24px',display:'flex',alignItems:'center',justifyContent:'center'}}/>
+            <span style={{fontSize:'18px'}}>📁</span>
+            <span style={{flex:1}}>Alle Texte</span>
+            <span style={{fontSize:'10px',color:!activeFolder?C.cyan:C.text3,background:!activeFolder?'rgba(0,229,200,0.2)':C.card2,padding:'2px 8px',borderRadius:'10px',fontWeight:600}}>{texts.length}</span>
           </div>
+
+          {/* Divider */}
+          <div style={{height:'1px',background:C.border,margin:'6px 14px 8px'}}/>
           {getChildren(null).map(f=><FolderRow key={f.id} f={f} depth={0}/>)}
         </div>
 
