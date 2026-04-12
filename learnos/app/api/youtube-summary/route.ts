@@ -12,76 +12,35 @@ function extractVideoId(url: string): string | null {
   return null
 }
 
-async function fetchVideoTitle(videoId: string): Promise<string> {
+async function fetchTranscript(videoUrl: string): Promise<{ text: string, title: string } | null> {
   try {
-    const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`, {
-      signal: AbortSignal.timeout(5000)
-    })
-    if (res.ok) {
-      const data = await res.json()
-      if (data.title) return data.title
-    }
-  } catch {}
-  return 'YouTube Video'
-}
-
-function decodeEntities(s: string): string {
-  return s
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&apos;/g, "'")
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, h: string) => String.fromCodePoint(parseInt(h, 16)))
-    .replace(/&#(\d+);/g, (_, d: string) => String.fromCodePoint(parseInt(d, 10)))
-}
-
-async function fetchTranscript(videoId: string): Promise<{ text: string, title: string } | null> {
-  const title = await fetchVideoTitle(videoId)
-
-  // Use codetabs CORS proxy to fetch YouTube watch page
-  const proxies = [
-    `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent('https://www.youtube.com/watch?v=' + videoId)}`,
-  ]
-
-  for (const proxyUrl of proxies) {
-    try {
-      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) })
-      if (!res.ok) continue
-      const html = await res.text()
-
-      if (html.includes('g-recaptcha')) continue
-
-      const captionMatch = html.match(/"captionTracks":(\[.*?\])/)
-      if (!captionMatch) continue
-
-      const tracks = JSON.parse(captionMatch[1])
-      if (!Array.isArray(tracks) || tracks.length === 0) continue
-
-      // Find best track: English > any English variant > auto-generated > first
-      let track = tracks.find((t: any) => t.languageCode === 'en') ||
-        tracks.find((t: any) => t.languageCode && t.languageCode.startsWith('en')) ||
-        tracks.find((t: any) => t.kind === 'asr') ||
-        tracks[0]
-      if (!track || !track.baseUrl) continue
-
-      const captionUrl = (track.baseUrl as string).replace(/\\u0026/g, '&')
-      const capRes = await fetch(captionUrl, { signal: AbortSignal.timeout(8000) })
-      if (!capRes.ok) continue
-      const xml = await capRes.text()
-
-      const texts: string[] = []
-      const regex = /<text[^>]*>([\s\S]*?)<\/text>/g
-      let m: RegExpExecArray | null
-      while ((m = regex.exec(xml)) !== null) {
-        const t = decodeEntities(m[1]).replace(/\n/g, ' ').trim()
-        if (t) texts.push(t)
+    const res = await fetch(
+      `https://api.supadata.ai/v1/transcript?url=${encodeURIComponent(videoUrl)}&lang=en&text=true`,
+      {
+        headers: { 'x-api-key': process.env.SUPADATA_API_KEY! },
+        signal: AbortSignal.timeout(15000)
       }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    if (!data.content || data.content.length < 100) return null
 
-      if (texts.length === 0) continue
-      const transcript = texts.join(' ').replace(/\s+/g, ' ').trim()
-      if (transcript.length > 100) return { text: transcript, title }
+    // Get video title via noembed
+    let title = 'YouTube Video'
+    try {
+      const titleRes = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(videoUrl)}`, {
+        signal: AbortSignal.timeout(5000)
+      })
+      if (titleRes.ok) {
+        const titleData = await titleRes.json()
+        if (titleData.title) title = titleData.title
+      }
     } catch {}
-  }
 
-  return null
+    return { text: data.content, title }
+  } catch {
+    return null
+  }
 }
 
 function buildPrompt(videoTitle: string, transcript: string, language: string, focus: string) {
@@ -146,13 +105,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ungueltige YouTube URL.' }, { status: 400 })
     }
 
-    const transcriptData = await fetchTranscript(videoId)
+    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
+    const transcriptData = await fetchTranscript(videoUrl)
     if (!transcriptData) {
       return NextResponse.json({
         error: 'TRANSCRIPT_NOT_FOUND',
         videoId,
-        videoTitle: await fetchVideoTitle(videoId),
-        message: 'Transkript konnte nicht automatisch geladen werden.'
+        message: 'Transkript konnte nicht geladen werden. Das Video hat vermutlich keine Untertitel.'
       }, { status: 404 })
     }
 
