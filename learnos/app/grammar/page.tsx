@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import type { GrammarSentence } from '@/lib/types'
+import BottomNav from '@/app/components/BottomNav'
 
-const C = { primary:'#1a3a4a',teal:'#ADD8E6',tealDark:'#7BB8CC',tealLight:'#E8F6FA',sand:'#f7f4f0',text:'#1a2c35',text2:'#5a7280',border:'#dde8ec',danger:'#e24b4a',dangerLight:'#fef0f0',white:'#fff',bg:'#edf4f7' }
+const C = { primary:'#00e5c8',teal:'#00e5c8',tealDark:'#00b8a0',tealLight:'rgba(0,229,200,0.15)',sand:'#141a2e',text:'#e8ecf4',text2:'#8892a8',border:'#2a3050',danger:'#ef4444',dangerLight:'rgba(239,68,68,0.15)',white:'#141a2e',bg:'#0a0e1a',card2:'#1c2340',border2:'#3a4570',text3:'#5a6478',green:'#4ade80',greenGlow:'rgba(74,222,128,0.15)',violet:'#a855f7' }
 
 const TENSES = [
   {id:'simple_present',label:'Simple Present'},{id:'present_continuous',label:'Present Continuous'},
@@ -70,17 +71,17 @@ export default function GrammarPage() {
 
   return (
     <div style={{minHeight:'100vh',background:C.bg}}>
-      <div style={{background:C.primary,padding:'12px 16px',display:'flex',alignItems:'center',gap:'10px',maxWidth:'600px',margin:'0 auto'}}>
-        <button onClick={()=>router.push('/learn')} style={{background:'none',border:'none',color:C.teal,fontSize:'18px',cursor:'pointer',fontWeight:600}}>←</button>
-        <span style={{color:'#fff',fontSize:'15px',fontWeight:700,flex:1}}>🎯 Grammatik-Trainer</span>
-        {stats.total>0&&<span style={{fontSize:'12px',color:C.teal,fontWeight:600}}>{stats.correct}/{stats.total}</span>}
+      <div style={{background:'#111827',borderBottom:'1px solid #2a3050',padding:'12px 16px',display:'flex',alignItems:'center',gap:'10px',maxWidth:'600px',margin:'0 auto'}}>
+        <button onClick={()=>router.push('/learn')} style={{background:'none',border:'none',color:'#00e5c8',fontSize:'18px',cursor:'pointer',fontWeight:600}}>←</button>
+        <span style={{color:'#e8ecf4',fontSize:'15px',fontWeight:700,flex:1}}>🎯 Grammatik-Trainer</span>
+        {stats.total>0&&<span style={{fontSize:'12px',color:'#00e5c8',fontWeight:600}}>{stats.correct}/{stats.total}</span>}
       </div>
-      <div style={{maxWidth:'600px',margin:'0 auto',padding:'1rem'}}>
+      <div className="page-content" style={{maxWidth:'600px',margin:'0 auto',padding:'1rem'}}>
         {sentences.length===0&&!loading&&(
           <div style={{textAlign:'center',padding:'3rem 1rem'}}>
             <div style={{fontSize:'48px',marginBottom:'1rem'}}>🎯</div>
             <p style={{color:C.text2,marginBottom:'1.5rem',fontSize:'15px'}}>Noch keine Sätze — lass die KI Übungssätze generieren!</p>
-            <button onClick={generateMore} disabled={generating} style={{padding:'12px 28px',background:C.primary,color:'#fff',border:'none',borderRadius:'8px',fontSize:'14px',fontWeight:600,cursor:'pointer'}}>
+            <button onClick={generateMore} disabled={generating} style={{padding:'12px 28px',background:'#00e5c8',color:'#0a0e1a',border:'none',borderRadius:'8px',fontSize:'14px',fontWeight:600,cursor:'pointer'}}>
               {generating?'⏳ Generiere...':'✨ Sätze generieren'}
             </button>
           </div>
@@ -89,26 +90,26 @@ export default function GrammarPage() {
           <div>
             <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:'12px',padding:'1.5rem',textAlign:'center',marginBottom:'1rem'}}>
               <div style={{fontSize:'12px',color:C.text2,marginBottom:'8px',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.05em'}}>Welche Zeitform?</div>
-              <div style={{fontSize:'19px',fontWeight:600,fontStyle:'italic',lineHeight:'1.5',color:C.primary}}>"{current.sentence}"</div>
-              {current.signal_words?.length>0&&<div style={{fontSize:'12px',color:C.tealDark,marginTop:'8px',fontWeight:500}}>Signalwörter: {current.signal_words.join(', ')}</div>}
+              <div style={{fontSize:'19px',fontWeight:600,fontStyle:'italic',lineHeight:'1.5',color:'#00e5c8'}}>"{current.sentence}"</div>
+              {current.signal_words?.length>0&&<div style={{fontSize:'12px',color:'#00b8a0',marginTop:'8px',fontWeight:500}}>Signalwörter: {current.signal_words.join(', ')}</div>}
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'1rem'}}>
               {TENSES.map(t=>{
                 let bg=C.white,border=C.border,color=C.text,fw:number=400
-                if (selected===t.id) { if(result==='correct'){bg='#f0faf0';border='#90EE90';color='#3a8a3a';fw=600} else {bg=C.dangerLight;border=C.danger;color=C.danger;fw=600} }
-                else if (result!==null&&t.id===current.tense) {bg='#f0faf0';border='#90EE90';color='#3a8a3a';fw=600}
+                if (selected===t.id) { if(result==='correct'){bg='rgba(74,222,128,0.15)';border='#4ade80';color='#4ade80';fw=600} else {bg=C.dangerLight;border=C.danger;color=C.danger;fw=600} }
+                else if (result!==null&&t.id===current.tense) {bg='rgba(74,222,128,0.15)';border='#4ade80';color='#4ade80';fw=600}
                 return <button key={t.id} onClick={()=>answer(t.id)} disabled={result!==null} style={{padding:'11px 8px',background:bg,border:`1.5px solid ${border}`,borderRadius:'8px',fontSize:'13px',color,cursor:result!==null?'default':'pointer',fontWeight:fw}}>{t.label}</button>
               })}
             </div>
             {result&&(
-              <div style={{background:result==='correct'?'#f0faf0':C.dangerLight,border:`1.5px solid ${result==='correct'?'#90EE90':C.danger}`,borderRadius:'10px',padding:'1rem',marginBottom:'1rem'}}>
-                <div style={{fontWeight:700,marginBottom:'4px',color:result==='correct'?'#3a8a3a':C.danger}}>
+              <div style={{background:result==='correct'?'rgba(74,222,128,0.15)':C.dangerLight,border:`1.5px solid ${result==='correct'?'#4ade80':C.danger}`,borderRadius:'10px',padding:'1rem',marginBottom:'1rem'}}>
+                <div style={{fontWeight:700,marginBottom:'4px',color:result==='correct'?'#4ade80':C.danger}}>
                   {result==='correct'?'✓ Richtig!':`✗ Es ist: ${TENSES.find(t=>t.id===current.tense)?.label}`}
                 </div>
-                <p style={{fontSize:'13px',lineHeight:'1.5',color:result==='correct'?'#1a3a1a':C.danger}}>{current.explanation}</p>
+                <p style={{fontSize:'13px',lineHeight:'1.5',color:result==='correct'?'#e8ecf4':C.danger}}>{current.explanation}</p>
               </div>
             )}
-            {result&&<button onClick={next} style={{width:'100%',padding:'12px',background:C.primary,color:'#fff',border:'none',borderRadius:'8px',fontSize:'14px',fontWeight:600,cursor:'pointer'}}>Nächster Satz →</button>}
+            {result&&<button onClick={next} style={{width:'100%',padding:'12px',background:'#00e5c8',color:'#0a0e1a',border:'none',borderRadius:'8px',fontSize:'14px',fontWeight:600,cursor:'pointer'}}>Nächster Satz →</button>}
           </div>
         )}
         {sentences.length>0&&(
@@ -117,6 +118,7 @@ export default function GrammarPage() {
           </button>
         )}
       </div>
+      <BottomNav />
     </div>
   )
 }
