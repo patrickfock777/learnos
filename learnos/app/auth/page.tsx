@@ -13,19 +13,19 @@ export default function AuthPage() {
   const router = useRouter()
 
   const s: Record<string, React.CSSProperties> = {
-    page: { minHeight: '100vh', background: 'linear-gradient(160deg, #1a3a4a 0%, #2a6478 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' },
-    card: { background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '380px', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' },
-    header: { background: '#1a3a4a', padding: '2rem 2rem 1.5rem', textAlign: 'center' as const },
-    logoBox: { width: '56px', height: '56px', background: '#ADD8E6', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: '26px' },
-    title: { color: '#fff', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.3px' },
-    sub: { color: '#ADD8E6', fontSize: '12px', marginTop: '4px', opacity: 0.9 },
+    page: { minHeight: '100vh', background: 'linear-gradient(160deg, #0a0e1a 0%, #141a2e 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' },
+    card: { background: '#141a2e', border: '1px solid #2a3050', borderRadius: '16px', width: '100%', maxWidth: '380px', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' },
+    header: { background: '#0a0e1a', padding: '2rem 2rem 1.5rem', textAlign: 'center' as const },
+    logoBox: { width: '56px', height: '56px', background: 'linear-gradient(135deg, #00e5c8, #a855f7)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: '26px' },
+    title: { color: '#e8ecf4', fontSize: '22px', fontWeight: 700, letterSpacing: '-0.3px' },
+    sub: { color: '#00e5c8', fontSize: '12px', marginTop: '4px', opacity: 0.9 },
     body: { padding: '1.5rem' },
-    tabs: { display: 'flex', borderBottom: '2px solid #dde8ec', marginBottom: '1.25rem' },
+    tabs: { display: 'flex', borderBottom: '2px solid #2a3050', marginBottom: '1.25rem' },
 
-    input: { width: '100%', padding: '10px 12px', border: '1.5px solid #dde8ec', borderRadius: '8px', fontSize: '14px', marginBottom: '10px', color: '#1a2c35', background: '#f7f4f0', outline: 'none' },
-    btn: { width: '100%', padding: '11px', background: '#1a3a4a', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', letterSpacing: '0.2px' },
-    error: { fontSize: '13px', color: '#e24b4a', background: '#fef0f0', padding: '8px 12px', borderRadius: '7px', marginBottom: '10px', border: '1px solid #f5c0c0' },
-    forgot: { textAlign: 'center' as const, fontSize: '12px', color: '#5a7280', marginTop: '12px', cursor: 'pointer' },
+    input: { width: '100%', padding: '10px 12px', border: '1.5px solid #2a3050', borderRadius: '8px', fontSize: '14px', marginBottom: '10px', color: '#e8ecf4', background: '#0a0e1a', outline: 'none' },
+    btn: { width: '100%', padding: '11px', background: 'linear-gradient(135deg, #00e5c8, #00b8a0)', color: '#0a0e1a', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', letterSpacing: '0.2px' },
+    error: { fontSize: '13px', color: '#ef4444', background: 'rgba(239,68,68,0.15)', padding: '8px 12px', borderRadius: '7px', marginBottom: '10px', border: '1px solid rgba(239,68,68,0.3)' },
+    forgot: { textAlign: 'center' as const, fontSize: '12px', color: '#8892a8', marginTop: '12px', cursor: 'pointer' },
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -58,7 +58,7 @@ export default function AuthPage() {
         <div style={s.body}>
           <div style={s.tabs}>
             {(['login','signup'] as const).map(m => (
-              <button key={m} onClick={() => setMode(m)} style={{ flex: 1, padding: '8px', textAlign: 'center', fontSize: '13px', fontWeight: 500, cursor: 'pointer', color: mode === m ? '#1a3a4a' : '#5a7280', borderBottom: `2px solid ${mode === m ? '#7BB8CC' : 'transparent'}`, marginBottom: '-2px', background: 'none', border: 'none' }}>
+              <button key={m} onClick={() => setMode(m)} style={{ flex: 1, padding: '8px', textAlign: 'center', fontSize: '13px', fontWeight: 500, cursor: 'pointer', color: mode === m ? '#00e5c8' : '#8892a8', borderBottom: `2px solid ${mode === m ? '#00e5c8' : 'transparent'}`, marginBottom: '-2px', background: 'none', border: 'none' }}>
                 {m === 'login' ? 'Einloggen' : 'Registrieren'}
               </button>
             ))}
@@ -72,7 +72,7 @@ export default function AuthPage() {
               {loading ? 'Bitte warten...' : mode === 'login' ? 'Einloggen' : 'Konto erstellen'}
             </button>
           </form>
-          <div style={s.forgot}>Passwort vergessen? <span style={{ color: '#2a6478', fontWeight: 500 }}>Support kontaktieren</span></div>
+          <div style={s.forgot}>Passwort vergessen? <span style={{ color: '#00e5c8', fontWeight: 500 }}>Support kontaktieren</span></div>
         </div>
       </div>
     </div>

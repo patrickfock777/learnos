@@ -3,12 +3,15 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import type { VocabSet, VocabCard, VocabProgress } from '@/lib/types'
+import BottomNav from '@/app/components/BottomNav'
 
 const C = {
-  primary:'#1a3a4a', teal:'#ADD8E6', tealDark:'#7BB8CC', tealLight:'#E8F6FA',
-  accent:'#2a6478', sand:'#f7f4f0', text:'#1a2c35', text2:'#5a7280', border:'#dde8ec',
-  danger:'#e24b4a', dangerLight:'#fef0f0', white:'#fff', bg:'#edf4f7',
-  warn:'#FAEEDA', warnDark:'#854F0B', ok:'#EAF3DE', okDark:'#27500A'
+  primary:'#00e5c8', teal:'#00e5c8', tealDark:'#00b8a0', tealLight:'rgba(0,229,200,0.15)',
+  accent:'#00e5c8', sand:'#141a2e', text:'#e8ecf4', text2:'#8892a8', border:'#2a3050',
+  danger:'#ef4444', dangerLight:'rgba(239,68,68,0.15)', white:'#141a2e', bg:'#0a0e1a',
+  warn:'rgba(168,85,247,0.15)', warnDark:'#a855f7', ok:'rgba(74,222,128,0.15)', okDark:'#4ade80',
+  card2:'#1c2340', border2:'#3a4570', text3:'#5a6478',
+  violet:'#a855f7', cyanGlow:'rgba(0,229,200,0.15)'
 }
 
 // Strength logic:
@@ -27,10 +30,10 @@ function calcStrength(correct: number, wrong: number, streak: number): 1|2|3|4 {
 }
 
 function strengthLabel(s: 1|2|3|4) {
-  if (s===1) return { label:'Sehr schwach', bg:'#FCEBEB', color:'#791F1F' }
-  if (s===2) return { label:'Schwach',      bg:'#FAEEDA', color:'#854F0B' }
-  if (s===3) return { label:'Mittel',       bg:'#f7f4f0', color:'#5a7280' }
-  return           { label:'Stark',         bg:'#EAF3DE', color:'#27500A' }
+  if (s===1) return { label:'Sehr schwach', bg:'rgba(239,68,68,0.15)', color:'#ef4444' }
+  if (s===2) return { label:'Schwach',      bg:'rgba(168,85,247,0.15)', color:'#a855f7' }
+  if (s===3) return { label:'Mittel',       bg:'rgba(0,229,200,0.15)', color:'#8892a8' }
+  return           { label:'Stark',         bg:'rgba(74,222,128,0.15)', color:'#4ade80' }
 }
 
 interface ErrorEntry { id:string; card_id:string; typed:string; correct:string; created_at:string }
@@ -286,17 +289,17 @@ export default function VocabPage() {
 
   // --- UI helpers ---
   const Topbar = ({onBack,title,right}:{onBack:()=>void,title:string,right?:React.ReactNode}) => (
-    <div style={{background:C.primary,padding:'12px 16px',display:'flex',alignItems:'center',gap:'10px',maxWidth:'600px',margin:'0 auto'}}>
-      <button onClick={onBack} style={{background:'none',border:'none',color:C.teal,fontSize:'18px',cursor:'pointer',fontWeight:600}}>←</button>
-      <span style={{color:'#fff',fontSize:'15px',fontWeight:700,flex:1}}>{title}</span>
+    <div style={{background:'#111827',borderBottom:'1px solid #2a3050',padding:'12px 16px',display:'flex',alignItems:'center',gap:'10px',maxWidth:'600px',margin:'0 auto'}}>
+      <button onClick={onBack} style={{background:'none',border:'none',color:'#00e5c8',fontSize:'18px',cursor:'pointer',fontWeight:600}}>←</button>
+      <span style={{color:'#e8ecf4',fontSize:'15px',fontWeight:700,flex:1}}>{title}</span>
       {right}
     </div>
   )
 
   const ConfirmModal = ({label,onConfirm}:{label:string,onConfirm:()=>void}) => (
-    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:'1rem'}}>
-      <div style={{background:C.white,borderRadius:'14px',padding:'1.5rem',maxWidth:'320px',width:'100%'}}>
-        <div style={{fontWeight:700,fontSize:'16px',marginBottom:'6px'}}>Wirklich löschen?</div>
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:200,padding:'1rem'}}>
+      <div style={{background:C.card2,border:`1px solid ${C.border}`,borderRadius:'14px',padding:'1.5rem',maxWidth:'320px',width:'100%'}}>
+        <div style={{fontWeight:700,fontSize:'16px',marginBottom:'6px',color:C.text}}>Wirklich löschen?</div>
         <div style={{fontSize:'14px',color:C.text2,marginBottom:'1.25rem'}}>„{label}"</div>
         <div style={{display:'flex',gap:'8px'}}>
           <button onClick={onConfirm} style={{flex:1,padding:'10px',background:C.danger,color:'#fff',border:'none',borderRadius:'8px',cursor:'pointer',fontWeight:600}}>Löschen</button>
@@ -317,20 +320,20 @@ export default function VocabPage() {
           title={quizMode==='weak'?'🎯 Schwäche-Trainer':'Quiz'}
           right={<span style={{fontSize:'12px',color:C.teal,fontWeight:600}}>{quizIdx+1}/{total}</span>}
         />
-        <div style={{maxWidth:'600px',margin:'0 auto',padding:'1rem'}}>
+        <div className="page-content" style={{maxWidth:'600px',margin:'0 auto',padding:'1rem'}}>
           {/* Progress bar */}
           <div style={{height:'4px',background:C.border,borderRadius:'2px',marginBottom:'1rem'}}>
-            <div style={{height:'100%',background:quizMode==='weak'?C.danger:C.tealDark,borderRadius:'2px',width:`${(quizIdx/total)*100}%`,transition:'width 0.3s'}}></div>
+            <div style={{height:'100%',background:quizMode==='weak'?C.danger:'#00e5c8',borderRadius:'2px',width:`${(quizIdx/total)*100}%`,transition:'width 0.3s'}}></div>
           </div>
           {/* Stats */}
           <div style={{display:'flex',gap:'8px',marginBottom:'1rem'}}>
-            <div style={{flex:1,background:C.ok,border:`1px solid #90EE90`,borderRadius:'8px',padding:'7px',textAlign:'center',fontSize:'13px',color:C.okDark,fontWeight:600}}>✓ {sessionStats.correct}</div>
+            <div style={{flex:1,background:C.ok,border:`1px solid #4ade80`,borderRadius:'8px',padding:'7px',textAlign:'center',fontSize:'13px',color:C.okDark,fontWeight:600}}>✓ {sessionStats.correct}</div>
             <div style={{flex:1,background:C.dangerLight,border:`1px solid ${C.danger}`,borderRadius:'8px',padding:'7px',textAlign:'center',fontSize:'13px',color:C.danger,fontWeight:600}}>✗ {sessionStats.wrong}</div>
           </div>
           {/* Card */}
           <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:'14px',padding:'2rem',textAlign:'center',marginBottom:'1rem'}}>
             <div style={{fontSize:'11px',color:C.text2,marginBottom:'8px',fontWeight:500,textTransform:'uppercase' as const,letterSpacing:'0.05em'}}>Wie heißt das auf Englisch?</div>
-            <div style={{fontSize:'28px',fontWeight:700,color:C.primary,marginBottom:'10px'}}>{card.word_de}</div>
+            <div style={{fontSize:'28px',fontWeight:700,color:'#00e5c8',marginBottom:'10px'}}>{card.word_de}</div>
             <span style={{fontSize:'11px',padding:'2px 8px',borderRadius:'20px',background:sl.bg,color:sl.color,fontWeight:600}}>{sl.label}</span>
           </div>
           {/* Input */}
@@ -341,7 +344,7 @@ export default function VocabPage() {
                 placeholder="Englische Übersetzung..." autoFocus
                 style={{width:'100%',padding:'13px',border:`1.5px solid ${C.border}`,borderRadius:'10px',fontSize:'16px',marginBottom:'10px',background:C.sand,outline:'none'}} />
               <button onClick={checkAnswer} disabled={!answer.trim()}
-                style={{width:'100%',padding:'13px',background:C.primary,color:'#fff',border:'none',borderRadius:'10px',fontSize:'15px',fontWeight:600,cursor:'pointer'}}>
+                style={{width:'100%',padding:'13px',background:'#00e5c8',color:'#0a0e1a',border:'none',borderRadius:'10px',fontSize:'15px',fontWeight:600,cursor:'pointer'}}>
                 Prüfen
               </button>
             </div>
@@ -349,21 +352,22 @@ export default function VocabPage() {
             <div>
               <div style={{padding:'1rem',borderRadius:'10px',marginBottom:'10px',
                 background:result==='correct'?C.ok:C.dangerLight,
-                border:`1.5px solid ${result==='correct'?'#90EE90':C.danger}`,
+                border:`1.5px solid ${result==='correct'?'#4ade80':C.danger}`,
                 color:result==='correct'?C.okDark:C.danger,fontSize:'15px',lineHeight:'1.6'}}>
                 {result==='correct'?'✓ Richtig!':`✗ Falsch — Richtig: "${card.word_en}"`}
                 {card.synonyms?.length>0&&<div style={{fontSize:'12px',marginTop:'4px',opacity:0.8}}>Auch akzeptiert: {card.synonyms.join(', ')}</div>}
                 {hint&&result==='wrong'&&(
-                  <div style={{marginTop:'10px',padding:'8px 10px',background:'rgba(255,255,255,0.6)',borderRadius:'6px',fontSize:'12px',fontWeight:600}}>{hint}</div>
+                  <div style={{marginTop:'10px',padding:'8px 10px',background:'rgba(255,255,255,0.1)',borderRadius:'6px',fontSize:'12px',fontWeight:600}}>{hint}</div>
                 )}
               </div>
               <button onClick={nextCard}
-                style={{width:'100%',padding:'13px',background:C.primary,color:'#fff',border:'none',borderRadius:'10px',fontSize:'15px',fontWeight:600,cursor:'pointer'}}>
+                style={{width:'100%',padding:'13px',background:'#00e5c8',color:'#0a0e1a',border:'none',borderRadius:'10px',fontSize:'15px',fontWeight:600,cursor:'pointer'}}>
                 {quizIdx+1>=total?'Fertig ✓':'Weiter →'}
               </button>
             </div>
           )}
         </div>
+        <BottomNav />
       </div>
     )
   }
@@ -374,7 +378,7 @@ export default function VocabPage() {
     return (
       <div style={{minHeight:'100vh',background:C.bg}}>
         <Topbar onBack={()=>setView('sets')} title="🎯 Schwäche-Trainer" />
-        <div style={{maxWidth:'600px',margin:'0 auto',padding:'1rem'}}>
+        <div className="page-content" style={{maxWidth:'600px',margin:'0 auto',padding:'1rem'}}>
           <div style={{fontSize:'13px',color:C.text2,marginBottom:'1rem',lineHeight:'1.6'}}>
             Wähle ob du alle schwachen Karten oder nur die eines bestimmten Sets üben willst.
           </div>
@@ -415,6 +419,7 @@ export default function VocabPage() {
             </div>
           )}
         </div>
+        <BottomNav />
       </div>
     )
   }
@@ -424,7 +429,7 @@ export default function VocabPage() {
     return (
       <div style={{minHeight:'100vh',background:C.bg}}>
         <Topbar onBack={()=>setView('sets')} title="📊 Deine Fehler-Muster" />
-        <div style={{maxWidth:'600px',margin:'0 auto',padding:'1rem'}}>
+        <div className="page-content" style={{maxWidth:'600px',margin:'0 auto',padding:'1rem'}}>
           {patterns.length===0?(
             <div style={{textAlign:'center',padding:'3rem',color:C.text2,fontSize:'14px'}}>
               <div style={{fontSize:'40px',marginBottom:'1rem'}}>📊</div>
@@ -433,12 +438,12 @@ export default function VocabPage() {
           ):(
             <>
               <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:'12px',overflow:'hidden',marginBottom:'1rem'}}>
-                <div style={{padding:'12px 16px',borderBottom:`1px solid ${C.border}`,fontWeight:700,color:C.primary,fontSize:'14px'}}>
+                <div style={{padding:'12px 16px',borderBottom:`1px solid ${C.border}`,fontWeight:700,color:'#00e5c8',fontSize:'14px'}}>
                   Häufigste Fehler-Muster
                 </div>
                 {patterns.map((p,i)=>(
-                  <div key={i} style={{display:'flex',alignItems:'center',gap:'12px',padding:'10px 16px',borderTop:i>0?`1px solid ${C.border}`:'none',background:i<3?C.dangerLight:'none'}}>
-                    <div style={{width:'32px',height:'32px',borderRadius:'50%',background:i<3?C.danger:C.warn,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',fontWeight:700,color:'#fff',flexShrink:0}}>{p.count}×</div>
+                  <div key={i} style={{display:'flex',alignItems:'center',gap:'12px',padding:'10px 16px',borderTop:i>0?`1px solid ${C.border}`:'none',background:i<3?C.dangerLight:'transparent'}}>
+                    <div style={{width:'32px',height:'32px',borderRadius:'50%',background:i<3?C.danger:C.violet,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'12px',fontWeight:700,color:'#fff',flexShrink:0}}>{p.count}×</div>
                     <div style={{flex:1}}>
                       <div style={{fontSize:'13px',fontWeight:600,color:C.text}}>{p.key}</div>
                       <div style={{fontSize:'11px',color:C.text2,marginTop:'2px'}}>Bsp: {p.example}</div>
@@ -446,12 +451,13 @@ export default function VocabPage() {
                   </div>
                 ))}
               </div>
-              <div style={{background:C.tealLight,border:`1px solid ${C.tealDark}`,borderRadius:'10px',padding:'12px 14px',fontSize:'13px',color:C.accent,lineHeight:'1.6'}}>
+              <div style={{background:'rgba(0,229,200,0.15)',border:`1px solid #00b8a0`,borderRadius:'10px',padding:'12px 14px',fontSize:'13px',color:'#00e5c8',lineHeight:'1.6'}}>
                 <strong>Tipp:</strong> Die rot markierten Muster kommen am häufigsten vor. Nutze den Schwäche-Trainer um gezielt diese Wörter zu üben.
               </div>
             </>
           )}
         </div>
+        <BottomNav />
       </div>
     )
   }
@@ -465,12 +471,12 @@ export default function VocabPage() {
         <Topbar onBack={()=>setView('sets')} title={`${activeSet.icon} ${activeSet.name}`}
           right={<span style={{fontSize:'12px',color:C.teal}}>{cards.length} Karten</span>}
         />
-        <div style={{maxWidth:'600px',margin:'0 auto',padding:'1rem'}}>
+        <div className="page-content" style={{maxWidth:'600px',margin:'0 auto',padding:'1rem'}}>
           {/* Quiz buttons */}
           {cards.length>0&&(
             <div style={{display:'flex',gap:'8px',marginBottom:'8px'}}>
               <button onClick={()=>startQuiz('normal',cards)}
-                style={{flex:1,padding:'10px',background:C.primary,color:'#fff',border:'none',borderRadius:'8px',fontSize:'13px',fontWeight:600,cursor:'pointer'}}>
+                style={{flex:1,padding:'10px',background:'#00e5c8',color:'#0a0e1a',border:'none',borderRadius:'8px',fontSize:'13px',fontWeight:600,cursor:'pointer'}}>
                 ▶ Quiz ({cards.length})
               </button>
               {setWeakCards.length>0&&(
@@ -484,11 +490,11 @@ export default function VocabPage() {
           {/* Add buttons */}
           <div style={{display:'flex',gap:'8px',marginBottom:'1rem'}}>
             <button onClick={()=>{setShowNewCard(!showNewCard);setShowImport(false)}}
-              style={{flex:1,padding:'9px',background:C.white,border:`1.5px solid ${C.tealDark}`,color:C.primary,borderRadius:'8px',fontSize:'13px',fontWeight:600,cursor:'pointer'}}>
+              style={{flex:1,padding:'9px',background:C.card2,border:`1.5px solid ${C.border2}`,color:'#00e5c8',borderRadius:'8px',fontSize:'13px',fontWeight:600,cursor:'pointer'}}>
               + Einzeln
             </button>
             <button onClick={()=>{setShowImport(!showImport);setShowNewCard(false)}}
-              style={{flex:1,padding:'9px',background:C.white,border:`1.5px solid ${C.tealDark}`,color:C.primary,borderRadius:'8px',fontSize:'13px',fontWeight:600,cursor:'pointer'}}>
+              style={{flex:1,padding:'9px',background:C.card2,border:`1.5px solid ${C.border2}`,color:'#00e5c8',borderRadius:'8px',fontSize:'13px',fontWeight:600,cursor:'pointer'}}>
               ⬆ Liste importieren
             </button>
           </div>
@@ -500,8 +506,8 @@ export default function VocabPage() {
                   style={{width:'100%',padding:'9px 11px',border:`1.5px solid ${C.border}`,borderRadius:'7px',fontSize:'13px',marginBottom:'8px',background:C.sand,outline:'none'}} />
               ))}
               <div style={{display:'flex',gap:'8px'}}>
-                <button onClick={createCard} style={{flex:1,padding:'9px',background:C.primary,color:'#fff',border:'none',borderRadius:'7px',cursor:'pointer',fontWeight:600}}>Speichern</button>
-                <button onClick={()=>setShowNewCard(false)} style={{flex:1,padding:'9px',background:C.sand,border:`1px solid ${C.border}`,borderRadius:'7px',cursor:'pointer',color:C.text2}}>Abbrechen</button>
+                <button onClick={createCard} style={{flex:1,padding:'9px',background:'#00e5c8',color:'#0a0e1a',border:'none',borderRadius:'7px',cursor:'pointer',fontWeight:600}}>Speichern</button>
+                <button onClick={()=>setShowNewCard(false)} style={{flex:1,padding:'9px',background:C.card2,border:`1px solid ${C.border}`,borderRadius:'7px',cursor:'pointer',color:C.text2}}>Abbrechen</button>
               </div>
             </div>
           )}
@@ -515,18 +521,18 @@ export default function VocabPage() {
                 placeholder={'die Gelegenheit = opportunity\nverantwortlich = responsible'} rows={5}
                 style={{width:'100%',padding:'9px 11px',border:`1.5px solid ${C.border}`,borderRadius:'7px',fontSize:'13px',marginBottom:'8px',background:C.sand,outline:'none',resize:'vertical' as const,fontFamily:'monospace'}} />
               {importPreview.length>0&&(
-                <div style={{marginBottom:'8px',background:C.sand,borderRadius:'6px',padding:'6px 8px',maxHeight:'100px',overflowY:'auto'}}>
-                  <div style={{fontSize:'11px',fontWeight:600,color:C.primary,marginBottom:'4px'}}>{importPreview.length} erkannt:</div>
+                <div style={{marginBottom:'8px',background:C.card2,borderRadius:'6px',padding:'6px 8px',maxHeight:'100px',overflowY:'auto'}}>
+                  <div style={{fontSize:'11px',fontWeight:600,color:'#00e5c8',marginBottom:'4px'}}>{importPreview.length} erkannt:</div>
                   {importPreview.map((p,i)=><div key={i} style={{fontSize:'11px',color:C.text2}}>{p.de} → {p.en}</div>)}
                 </div>
               )}
               <div style={{display:'flex',gap:'8px'}}>
                 <button onClick={importCards} disabled={!importPreview.length||importLoading}
-                  style={{flex:1,padding:'9px',background:importPreview.length?C.primary:'#ccc',color:'#fff',border:'none',borderRadius:'7px',cursor:'pointer',fontWeight:600}}>
+                  style={{flex:1,padding:'9px',background:importPreview.length?'#00e5c8':'#3a4570',color:importPreview.length?'#0a0e1a':'#5a6478',border:'none',borderRadius:'7px',cursor:'pointer',fontWeight:600}}>
                   {importLoading?'...':`${importPreview.length} importieren`}
                 </button>
                 <button onClick={()=>{setShowImport(false);setImportText('');setImportPreview([])}}
-                  style={{padding:'9px 14px',background:C.sand,border:`1px solid ${C.border}`,borderRadius:'7px',cursor:'pointer',color:C.text2}}>
+                  style={{padding:'9px 14px',background:C.card2,border:`1px solid ${C.border}`,borderRadius:'7px',cursor:'pointer',color:C.text2}}>
                   Abbrechen
                 </button>
               </div>
@@ -541,18 +547,19 @@ export default function VocabPage() {
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontWeight:600,fontSize:'14px',color:C.text}}>{card.word_de}</div>
                   <div style={{color:C.text2,fontSize:'12px',marginTop:'2px'}}>{card.word_en}</div>
-                  {card.synonyms?.length>0&&<div style={{fontSize:'11px',color:'#aaa',marginTop:'2px'}}>+ {card.synonyms.join(', ')}</div>}
+                  {card.synonyms?.length>0&&<div style={{fontSize:'11px',color:C.text3,marginTop:'2px'}}>+ {card.synonyms.join(', ')}</div>}
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:'5px',flexShrink:0}}>
                   {sl&&<span style={{fontSize:'10px',padding:'2px 6px',borderRadius:'20px',background:sl.bg,color:sl.color,fontWeight:600,whiteSpace:'nowrap' as const}}>{sl.label}</span>}
                   {p&&(p.correct+p.wrong)>0&&<span style={{fontSize:'10px',color:C.text2,whiteSpace:'nowrap' as const}}>✓{p.correct} ✗{p.wrong}</span>}
-                  <button onClick={()=>setConfirmDelete(card.id)} style={{padding:'3px 7px',background:'none',border:'none',cursor:'pointer',color:'#ccc',fontSize:'12px'}}>✕</button>
+                  <button onClick={()=>setConfirmDelete(card.id)} style={{padding:'3px 7px',background:'none',border:'none',cursor:'pointer',color:C.text3,fontSize:'12px'}}>✕</button>
                 </div>
               </div>
             )
           })}
           {cards.length===0&&<div style={{textAlign:'center',padding:'2rem',color:C.text2,fontSize:'14px'}}>Noch keine Vokabeln. Füge deine erste Karte hinzu!</div>}
         </div>
+        <BottomNav />
       </div>
     )
   }
@@ -562,7 +569,7 @@ export default function VocabPage() {
     <div style={{minHeight:'100vh',background:C.bg}}>
       {confirmDelete&&<ConfirmModal label={sets.find(s=>s.id===confirmDelete)?.name||''} onConfirm={()=>deleteSet(confirmDelete!)}/>}
       <Topbar onBack={()=>router.push('/learn')} title="🗂 Vokabeln" />
-      <div style={{maxWidth:'600px',margin:'0 auto',padding:'1rem'}}>
+      <div className="page-content" style={{maxWidth:'600px',margin:'0 auto',padding:'1rem'}}>
         {/* Stats row */}
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px',marginBottom:'1rem'}}>
           <div style={{background:C.white,border:`1px solid ${C.border}`,borderRadius:'10px',padding:'12px',textAlign:'center'}}>
@@ -607,8 +614,8 @@ export default function VocabPage() {
               {icons.map(ic=><button key={ic} onClick={()=>setNewSetIcon(ic)} style={{padding:'6px',fontSize:'18px',background:newSetIcon===ic?C.tealLight:C.white,border:`1px solid ${newSetIcon===ic?C.tealDark:C.border}`,borderRadius:'6px',cursor:'pointer'}}>{ic}</button>)}
             </div>
             <div style={{display:'flex',gap:'8px'}}>
-              <button onClick={createSet} style={{flex:1,padding:'9px',background:C.primary,color:'#fff',border:'none',borderRadius:'7px',cursor:'pointer',fontWeight:600}}>Erstellen</button>
-              <button onClick={()=>setShowNewSet(false)} style={{flex:1,padding:'9px',background:C.sand,border:`1px solid ${C.border}`,borderRadius:'7px',cursor:'pointer',color:C.text2}}>Abbrechen</button>
+              <button onClick={createSet} style={{flex:1,padding:'9px',background:'#00e5c8',color:'#0a0e1a',border:'none',borderRadius:'7px',cursor:'pointer',fontWeight:600}}>Erstellen</button>
+              <button onClick={()=>setShowNewSet(false)} style={{flex:1,padding:'9px',background:C.card2,border:`1px solid ${C.border}`,borderRadius:'7px',cursor:'pointer',color:C.text2}}>Abbrechen</button>
             </div>
           </div>
         )}
@@ -631,12 +638,13 @@ export default function VocabPage() {
                   </div>
                 </div>
               </div>
-              <button onClick={()=>setConfirmDelete(s.id)} style={{padding:'4px 8px',background:'none',border:'none',cursor:'pointer',color:'#ccc',fontSize:'13px'}}>✕</button>
+              <button onClick={()=>setConfirmDelete(s.id)} style={{padding:'4px 8px',background:'none',border:'none',cursor:'pointer',color:C.text3,fontSize:'13px'}}>✕</button>
             </div>
           )
         })}
         {sets.length===0&&<div style={{textAlign:'center',padding:'2rem',color:C.text2,fontSize:'14px'}}>Noch keine Sets. Erstelle dein erstes Vokabel-Set!</div>}
       </div>
+      <BottomNav />
     </div>
   )
 }
