@@ -56,7 +56,15 @@ export default function YoutubePage() {
         body: JSON.stringify(body)
       })
       const data = await res.json()
-      if (data.error) { setError(data.error); setStep('input'); return }
+      if (data.error === 'TRANSCRIPT_NOT_FOUND') {
+        // Auto-switch to paste mode with video info
+        setInputMode('paste')
+        if (data.videoTitle) setUrl(data.videoTitle)
+        setError(`Automatisches Laden fehlgeschlagen. Bitte kopiere das Transkript manuell – Anleitung unten.`)
+        setStep('input')
+        return
+      }
+      if (data.error) { setError(data.message || data.error); setStep('input'); return }
       setResult(data)
       setEditTitle(data.suggestedTitle)
       setEditSummary(data.summary)
@@ -130,9 +138,13 @@ export default function YoutubePage() {
               ):(
                 <>
                   <div style={{fontSize:'12px',color:C.text2,marginBottom:'8px',padding:'10px',background:C.tealLight,borderRadius:'8px',lineHeight:'1.6'}}>
-                    <strong>So geht's:</strong> YouTube Video öffnen → unter dem Video auf <strong>"..."</strong> klicken → <strong>"Transcript öffnen"</strong> → Text markieren → hier einfügen.
-                    <br/><br/>
-                    Optional: Videotitel unten eintragen.
+                    <strong>So geht's am Handy:</strong><br/>
+                    1. Öffne das Video in der <strong>YouTube App</strong><br/>
+                    2. Tippe auf <strong>"Mehr"</strong> (unter dem Video)<br/>
+                    3. Tippe auf <strong>"Transkript anzeigen"</strong><br/>
+                    4. Markiere alles und kopiere es hier rein<br/><br/>
+                    <strong>Am PC:</strong> Unter dem Video auf <strong>"...Mehr"</strong> → <strong>"Transkript anzeigen"</strong> → Text markieren → hier einfügen.<br/><br/>
+                    Optional: Videotitel oben eintragen.
                   </div>
                   <input
                     value={url}
