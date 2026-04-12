@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+const TRANSCRIPT_WORKER = 'https://yt-transcript.patrickfock7.workers.dev'
+
 function extractVideoId(url: string): string | null {
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
@@ -25,136 +27,22 @@ async function fetchVideoTitle(videoId: string): Promise<string> {
   return 'YouTube Video'
 }
 
-function matchAll(str: string, regex: RegExp): RegExpExecArray[] {
-  const results: RegExpExecArray[] = []
-  let m: RegExpExecArray | null
-  while ((m = regex.exec(str)) !== null) results.push(m)
-  return results
-}
-
-function parseCaptionXml(xml: string): string[] {
-  // Try <text> format (classic)
-  const textMatches = matchAll(xml, /<text[^>]*>([\s\S]*?)<\/text>/g)
-  if (textMatches.length > 0) {
-    return textMatches.map(m => decodeEntities(m[1]).replace(/\n/g, ' ').trim()).filter(t => t.length > 0)
-  }
-  // Try <p><s> format (newer)
-  const pMatches = matchAll(xml, /<p[^>]*>([\s\S]*?)<\/p>/g)
-  if (pMatches.length > 0) {
-    return pMatches.map(m => {
-      const inner = m[1]
-      const sTexts = matchAll(inner, /<s[^>]*>([^<]*)<\/s>/g).map(s => s[1]).join('')
-      return decodeEntities(sTexts || inner.replace(/<[^>]+>/g, '')).trim()
-    }).filter(t => t.length > 0)
-  }
-  return []
-}
-
-function decodeEntities(s: string): string {
-  return s
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&apos;/g, "'")
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCodePoint(parseInt(h, 16)))
-    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(parseInt(d, 10)))
-}
-
-async function fetchCaptionFromTracks(tracks: any[]): Promise<string | null> {
-  const track = tracks.find((t: any) => t.languageCode === 'en') ||
-    tracks.find((t: any) => t.languageCode?.startsWith('en')) ||
-    tracks.find((t: any) => t.kind === 'asr') ||
-    tracks[0]
-  if (!track?.baseUrl) return null
-
-  try {
-    const res = await fetch(track.baseUrl, { signal: AbortSignal.timeout(8000) })
-    if (!res.ok) return null
-    const xml = await res.text()
-    const texts = parseCaptionXml(xml)
-    const joined = texts.join(' ').replace(/\s+/g, ' ').trim()
-    return joined.length > 100 ? joined : null
-  } catch { return null }
-}
-
-// Strategy 1: InnerTube API with ANDROID client (least likely to be blocked)
-async function fetchViaInnerTubeAndroid(videoId: string): Promise<string | null> {
-  try {
-    const res = await fetch('https://www.youtube.com/youtubei/v1/player?prettyPrint=false', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'com.google.android.youtube/19.44.38 (Linux; U; Android 14)'
-      },
-      body: JSON.stringify({
-        context: { client: { clientName: 'ANDROID', clientVersion: '19.44.38' } },
-        videoId
-      }),
-      signal: AbortSignal.timeout(10000)
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    const tracks = data?.captions?.playerCaptionsTracklistRenderer?.captionTracks
-    if (!Array.isArray(tracks) || tracks.length === 0) return null
-    return await fetchCaptionFromTracks(tracks)
-  } catch { return null }
-}
-
-// Strategy 2: InnerTube API with IOS client
-async function fetchViaInnerTubeIOS(videoId: string): Promise<string | null> {
-  try {
-    const res = await fetch('https://www.youtube.com/youtubei/v1/player?prettyPrint=false', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'com.google.ios.youtube/19.44.38 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X)'
-      },
-      body: JSON.stringify({
-        context: { client: { clientName: 'IOS', clientVersion: '19.44.38' } },
-        videoId
-      }),
-      signal: AbortSignal.timeout(10000)
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    const tracks = data?.captions?.playerCaptionsTracklistRenderer?.captionTracks
-    if (!Array.isArray(tracks) || tracks.length === 0) return null
-    return await fetchCaptionFromTracks(tracks)
-  } catch { return null }
-}
-
-// Strategy 3: Parse YouTube watch page HTML
-async function fetchViaWatchPage(videoId: string): Promise<string | null> {
-  try {
-    const res = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      },
-      signal: AbortSignal.timeout(10000)
-    })
-    if (!res.ok) return null
-    const html = await res.text()
-
-    if (html.includes('class="g-recaptcha"')) return null
-
-    const captionMatch = html.match(/"captionTracks":(\[.*?\])/)
-    if (!captionMatch) return null
-
-    const tracks = JSON.parse(captionMatch[1])
-    return await fetchCaptionFromTracks(tracks)
-  } catch { return null }
-}
-
 async function fetchTranscript(videoId: string): Promise<{ text: string, title: string } | null> {
   const title = await fetchVideoTitle(videoId)
 
-  // Try all strategies in order
-  const strategies = [fetchViaInnerTubeAndroid, fetchViaInnerTubeIOS, fetchViaWatchPage]
-
-  for (const strategy of strategies) {
-    const text = await strategy(videoId)
-    if (text) return { text, title }
-  }
+  try {
+    const res = await fetch(TRANSCRIPT_WORKER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videoId }),
+      signal: AbortSignal.timeout(15000)
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    if (data.transcript && data.transcript.length > 100) {
+      return { text: data.transcript, title }
+    }
+  } catch {}
 
   return null
 }
@@ -219,7 +107,7 @@ export async function POST(req: NextRequest) {
 
     const videoId = extractVideoId(url)
     if (!videoId) {
-      return NextResponse.json({ error: 'Ungültige YouTube URL. Bitte kopiere die vollständige URL aus dem Browser.' }, { status: 400 })
+      return NextResponse.json({ error: 'Ungueltige YouTube URL. Bitte kopiere die vollstaendige URL aus dem Browser.' }, { status: 400 })
     }
 
     const transcriptData = await fetchTranscript(videoId)
@@ -228,7 +116,7 @@ export async function POST(req: NextRequest) {
         error: 'TRANSCRIPT_NOT_FOUND',
         videoId,
         videoTitle: await fetchVideoTitle(videoId),
-        message: 'Transkript konnte nicht automatisch geladen werden. YouTube blockiert den Server-Zugriff bei manchen Videos.'
+        message: 'Transkript konnte nicht automatisch geladen werden.'
       }, { status: 404 })
     }
 
