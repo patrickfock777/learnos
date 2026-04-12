@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { YoutubeTranscript } from 'youtube-transcript'
 
 function extractVideoId(url: string): string | null {
   const patterns = [
@@ -12,67 +13,41 @@ function extractVideoId(url: string): string | null {
   return null
 }
 
+async function fetchVideoTitle(videoId: string): Promise<string> {
+  try {
+    const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`, {
+      signal: AbortSignal.timeout(5000)
+    })
+    if (res.ok) {
+      const data = await res.json()
+      if (data.title) return data.title
+    }
+  } catch {}
+  return 'YouTube Video'
+}
+
 async function fetchTranscript(videoId: string): Promise<{text:string, title:string} | null> {
   try {
-    // Try fetching via youtube-transcript-api style proxy
-    const endpoints = [
-      `https://yt-transcript-api.vercel.app/api/transcript?videoId=${videoId}&lang=en`,
-      `https://yt-transcript-api.vercel.app/api/transcript?videoId=${videoId}`,
-    ]
+    const title = await fetchVideoTitle(videoId)
 
-    for (const endpoint of endpoints) {
+    // Try English first, then any language
+    let items
+    try {
+      items = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' })
+    } catch {
       try {
-        const res = await fetch(endpoint, { signal: AbortSignal.timeout(8000) })
-        if (res.ok) {
-          const data = await res.json()
-          if (data.transcript && Array.isArray(data.transcript)) {
-            const text = data.transcript.map((t: any) => t.text).join(' ').replace(/\s+/g, ' ').trim()
-            if (text.length > 100) return { text, title: data.title || 'YouTube Video' }
-          }
-        }
-      } catch {}
+        items = await YoutubeTranscript.fetchTranscript(videoId)
+      } catch {
+        return null
+      }
     }
 
-    // Fallback: try fetching YouTube page directly with different headers
-    const res = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      },
-      signal: AbortSignal.timeout(10000)
-    })
+    if (!items || items.length === 0) return null
 
-    if (!res.ok) return null
-    const html = await res.text()
-
-    // Extract video title
-    let title = 'YouTube Video'
-    const titleMatch = html.match(/<title>([^<]+)<\/title>/)
-    if (titleMatch) title = titleMatch[1].replace(' - YouTube', '').trim()
-
-    // Extract caption tracks
-    const captionMatch = html.match(/"captionTracks":(\[.*?\])/)
-    if (!captionMatch) return null
-
-    const tracks = JSON.parse(captionMatch[1])
-    const track = tracks.find((t: any) => t.languageCode === 'en') ||
-                  tracks.find((t: any) => t.languageCode?.startsWith('en')) ||
-                  tracks.find((t: any) => t.kind === 'asr') ||
-                  tracks[0]
-
-    if (!track?.baseUrl) return null
-
-    const captionRes = await fetch(track.baseUrl, { signal: AbortSignal.timeout(8000) })
-    if (!captionRes.ok) return null
-    const xml = await captionRes.text()
-
-    const textMatches = xml.match(/<text[^>]*>(.*?)<\/text>/g) || []
-    const text = textMatches
-      .map(t => t.replace(/<[^>]+>/g, '')
-        .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
-        .replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\n/g,' '))
-      .join(' ').replace(/\s+/g, ' ').trim()
+    const text = items.map(i => i.text).join(' ')
+      .replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+      .replace(/&#39;/g,"'").replace(/&quot;/g,'"')
+      .replace(/\s+/g, ' ').trim()
 
     return text.length > 100 ? { text, title } : null
   } catch (e) {
