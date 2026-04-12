@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const TRANSCRIPT_WORKER = 'https://yt-transcript.patrickfock7.workers.dev'
-
 function extractVideoId(url: string): string | null {
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
@@ -27,22 +25,61 @@ async function fetchVideoTitle(videoId: string): Promise<string> {
   return 'YouTube Video'
 }
 
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&apos;/g, "'")
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h: string) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d: string) => String.fromCodePoint(parseInt(d, 10)))
+}
+
 async function fetchTranscript(videoId: string): Promise<{ text: string, title: string } | null> {
   const title = await fetchVideoTitle(videoId)
 
-  try {
-    const res = await fetch(TRANSCRIPT_WORKER, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ videoId }),
-      signal: AbortSignal.timeout(15000)
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    if (data.transcript && data.transcript.length > 100) {
-      return { text: data.transcript, title }
-    }
-  } catch {}
+  // Use codetabs CORS proxy to fetch YouTube watch page
+  const proxies = [
+    `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent('https://www.youtube.com/watch?v=' + videoId)}`,
+  ]
+
+  for (const proxyUrl of proxies) {
+    try {
+      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) })
+      if (!res.ok) continue
+      const html = await res.text()
+
+      if (html.includes('g-recaptcha')) continue
+
+      const captionMatch = html.match(/"captionTracks":(\[.*?\])/)
+      if (!captionMatch) continue
+
+      const tracks = JSON.parse(captionMatch[1])
+      if (!Array.isArray(tracks) || tracks.length === 0) continue
+
+      // Find best track: English > any English variant > auto-generated > first
+      let track = tracks.find((t: any) => t.languageCode === 'en') ||
+        tracks.find((t: any) => t.languageCode && t.languageCode.startsWith('en')) ||
+        tracks.find((t: any) => t.kind === 'asr') ||
+        tracks[0]
+      if (!track || !track.baseUrl) continue
+
+      const captionUrl = (track.baseUrl as string).replace(/\\u0026/g, '&')
+      const capRes = await fetch(captionUrl, { signal: AbortSignal.timeout(8000) })
+      if (!capRes.ok) continue
+      const xml = await capRes.text()
+
+      const texts: string[] = []
+      const regex = /<text[^>]*>([\s\S]*?)<\/text>/g
+      let m: RegExpExecArray | null
+      while ((m = regex.exec(xml)) !== null) {
+        const t = decodeEntities(m[1]).replace(/\n/g, ' ').trim()
+        if (t) texts.push(t)
+      }
+
+      if (texts.length === 0) continue
+      const transcript = texts.join(' ').replace(/\s+/g, ' ').trim()
+      if (transcript.length > 100) return { text: transcript, title }
+    } catch {}
+  }
 
   return null
 }
@@ -96,7 +133,6 @@ export async function POST(req: NextRequest) {
   try {
     const { url, language = 'en', focus = '', transcript: pastedTranscript, videoTitle: pastedTitle } = await req.json()
 
-    // If transcript was pasted directly, skip YouTube fetching
     if (pastedTranscript) {
       const videoTitle = pastedTitle || 'YouTube Video'
       const prompt = buildPrompt(videoTitle, pastedTranscript, language, focus)
@@ -107,7 +143,7 @@ export async function POST(req: NextRequest) {
 
     const videoId = extractVideoId(url)
     if (!videoId) {
-      return NextResponse.json({ error: 'Ungueltige YouTube URL. Bitte kopiere die vollstaendige URL aus dem Browser.' }, { status: 400 })
+      return NextResponse.json({ error: 'Ungueltige YouTube URL.' }, { status: 400 })
     }
 
     const transcriptData = await fetchTranscript(videoId)
