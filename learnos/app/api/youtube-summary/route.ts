@@ -25,18 +25,25 @@ async function fetchVideoTitle(videoId: string): Promise<string> {
   return 'YouTube Video'
 }
 
+function matchAll(str: string, regex: RegExp): RegExpExecArray[] {
+  const results: RegExpExecArray[] = []
+  let m: RegExpExecArray | null
+  while ((m = regex.exec(str)) !== null) results.push(m)
+  return results
+}
+
 function parseCaptionXml(xml: string): string[] {
   // Try <text> format (classic)
-  const textMatches = [...xml.matchAll(/<text[^>]*>([\s\S]*?)<\/text>/g)]
+  const textMatches = matchAll(xml, /<text[^>]*>([\s\S]*?)<\/text>/g)
   if (textMatches.length > 0) {
     return textMatches.map(m => decodeEntities(m[1]).replace(/\n/g, ' ').trim()).filter(t => t.length > 0)
   }
   // Try <p><s> format (newer)
-  const pMatches = [...xml.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)]
+  const pMatches = matchAll(xml, /<p[^>]*>([\s\S]*?)<\/p>/g)
   if (pMatches.length > 0) {
     return pMatches.map(m => {
       const inner = m[1]
-      const sTexts = [...inner.matchAll(/<s[^>]*>([^<]*)<\/s>/g)].map(s => s[1]).join('')
+      const sTexts = matchAll(inner, /<s[^>]*>([^<]*)<\/s>/g).map(s => s[1]).join('')
       return decodeEntities(sTexts || inner.replace(/<[^>]+>/g, '')).trim()
     }).filter(t => t.length > 0)
   }
