@@ -347,7 +347,7 @@ export default function LibraryPage() {
   return (
     <div style={{minHeight:'100vh',background:C.bg}}>
       {confirmDelete&&<ConfirmModal/>}
-      {topbar(()=>router.push('/dashboard'),'📖 Bibliothek',
+      {topbar(()=>router.push('/knowledge'),'📖 Bibliothek',
         <button onClick={()=>setView('new')} style={{padding:'6px 12px',background:C.teal,color:C.primary,border:'none',borderRadius:'6px',fontSize:'12px',fontWeight:700,cursor:'pointer'}}>+ Text</button>
       )}
       <div style={{maxWidth:'600px',margin:'0 auto',display:'flex',height:'calc(100vh - 50px)'}}>

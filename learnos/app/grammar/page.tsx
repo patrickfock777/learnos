@@ -71,7 +71,7 @@ export default function GrammarPage() {
   return (
     <div style={{minHeight:'100vh',background:C.bg}}>
       <div style={{background:C.primary,padding:'12px 16px',display:'flex',alignItems:'center',gap:'10px',maxWidth:'600px',margin:'0 auto'}}>
-        <button onClick={()=>router.push('/dashboard')} style={{background:'none',border:'none',color:C.teal,fontSize:'18px',cursor:'pointer',fontWeight:600}}>←</button>
+        <button onClick={()=>router.push('/learn')} style={{background:'none',border:'none',color:C.teal,fontSize:'18px',cursor:'pointer',fontWeight:600}}>←</button>
         <span style={{color:'#fff',fontSize:'15px',fontWeight:700,flex:1}}>🎯 Grammatik-Trainer</span>
         {stats.total>0&&<span style={{fontSize:'12px',color:C.teal,fontWeight:600}}>{stats.correct}/{stats.total}</span>}
       </div>

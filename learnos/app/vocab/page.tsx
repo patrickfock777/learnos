@@ -561,7 +561,7 @@ export default function VocabPage() {
   return (
     <div style={{minHeight:'100vh',background:C.bg}}>
       {confirmDelete&&<ConfirmModal label={sets.find(s=>s.id===confirmDelete)?.name||''} onConfirm={()=>deleteSet(confirmDelete!)}/>}
-      <Topbar onBack={()=>router.push('/dashboard')} title="🗂 Vokabeln" />
+      <Topbar onBack={()=>router.push('/learn')} title="🗂 Vokabeln" />
       <div style={{maxWidth:'600px',margin:'0 auto',padding:'1rem'}}>
         {/* Stats row */}
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px',marginBottom:'1rem'}}>

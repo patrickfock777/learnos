@@ -37,12 +37,12 @@ export default function AuthPage() {
       if (data.user) {
         const { data: ws } = await supabase.from('workspaces').insert({ name: `${name}'s Workspace`, created_by: data.user.id }).select().single()
         await supabase.from('profiles').insert({ id: data.user.id, email, name, workspace_id: ws?.id, role: 'admin' })
-        router.push('/dashboard')
+        router.push('/notes')
       }
     } else {
       const { error: err } = await supabase.auth.signInWithPassword({ email, password })
       if (err) { setError('E-Mail oder Passwort falsch.'); setLoading(false); return }
-      router.push('/dashboard')
+      router.push('/notes')
     }
     setLoading(false)
   }
